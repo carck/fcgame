@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>NES Controller</title>
+    <script src="lib/nipplejs.min.js"></script>
+    <style>
+        body {
+            touch-action: none;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row;
+            width: 95%;
+            justify-content: space-between;
+            margin-left: 20px;
+            margin-right: 20px;
+        }
+
+        .button {
+            width: 60px;
+            height: 60px;
+            margin: 5px;
+            font-size: 20px;
+        }
+
+        .controller-area {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: row;
+        }
+
+        .controller {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            align-self: flex-end;
+            filter: drop-shadow(5px 5px 0px rgba(255, 255, 255, .8));
+        }
+
+        .controller button {
+            position: absolute;
+            z-index: 1;
+            border: 8px solid #474f51;
+            background: #857b7a;
+            color: transparent;
+            border-radius: 15px;
+            box-sizing: border-box;
+            outline: 0;
+            width: 56px;
+            height: 56px;
+            left: 50%;
+            top: 50%;
+            user-select: none;
+            transform: translate(-50%, -50%);
+        }
+
+        .controller::before {
+            content: '';
+            position: absolute;
+            z-index: 0;
+            pointer-events: none;
+            box-sizing: border-box;
+            left: 50%;
+            top: 50%;
+            width: 56px;
+            height: 56px;
+            background: #857b7a;
+            transform: translate(-50%, -50%);
+        }
+
+        .controller::after {
+            content: '';
+            z-index: 2;
+            position: absolute;
+            pointer-events: none;
+            box-sizing: border-box;
+            width: 42px;
+            height: 42px;
+            border: 8px solid #474f51;
+            border-radius: 50%;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: inset 0px 8px 0 0px #736a6d, inset 0px -8px 0 0px rgba(255, 255, 255, .4);
+        }
+
+        button.up.joydirection {
+            top: 0;
+            transform: translate(-50%, 0);
+            border-bottom: 0;
+            height: 50px;
+            border-bottom-right-radius: 0;
+            border-bottom-left-radius: 0;
+            box-shadow: inset 0px 8px 0 0px rgba(255, 255, 255, .5);
+        }
+
+        button.right.joydirection {
+            left: auto;
+            right: 0;
+            transform: translate(0, -50%);
+            border-left: 0;
+            width: 50px;
+            border-bottom-left-radius: 0;
+            border-top-left-radius: 0;
+            box-shadow: inset 8px 0 0 0px #857b7a, inset 6px 6px 0 0px rgba(255, 255, 255, .4), inset 8px -8px 0 0px rgba(0, 0, 0, .1);
+        }
+
+        button.down.joydirection {
+            top: auto;
+            transform: translate(-50%, 0);
+            bottom: 0;
+            border-top: 0;
+            height: 50px;
+            border-top-right-radius: 0;
+            border-top-left-radius: 0;
+            box-shadow: inset 0px -8px 0 0px rgba(0, 0, 0, .1);
+        }
+
+        button.left.joydirection {
+            left: 0;
+            transform: translate(0, -50%);
+            border-right: 0;
+            width: 50px;
+            border-bottom-right-radius: 0;
+            border-top-right-radius: 0;
+            box-shadow: inset 0px 8px 0 0px rgba(255, 255, 255, .4), inset -8px 0px 0 0px #857b7a, inset -8px -8px 0 0px rgba(0, 0, 0, .1);
+        }
+
+        .function {
+            display: flex;
+            padding: 8px 15px;
+            border-radius: 50px;
+            align-self: center;
+            background: #da4a4a;
+            box-shadow: 5px 5px 0 rgba(255, 255, 255, .8);
+        }
+
+        .function button {
+            user-select: none;
+            margin: 10px;
+            height: 32px;
+            width: auto;
+            outline: 0;
+            border: 3px solid #474f51;
+            box-shadow: 0 0 0 8px rgba(255, 255, 255, .1), inset 4px 4px 0 0px rgba(255, 255, 255, .4);
+            background: #857b7a;
+            color: #000;
+            border-radius: 15px;
+        }
+
+        .action {
+            display: flex;
+            align-self: flex-end;
+        }
+
+        .action button {
+            margin: 10px;
+            user-select: none;
+            width: 56px;
+            height: 56px;
+            background: #857b7a;
+            border-radius: 50%;
+            outline: 0;
+            color: #000;
+            border: 8px solid #474f51;
+            box-shadow: 0 0 0 10px rgba(255, 255, 255, .8), inset 5px 8px 0 0px rgba(255, 255, 255, .4), inset -5px -8px 0 0px rgba(0, 0, 0, .1);
+        }
+    </style>
+</head>
+
+<body>
+    <h2>NES Controller</h2>
+    <div class="container">
+        <div id="joystick">
+            <div class="controller-area">
+                <div class="controller">
+                    <div id="controls-direction">
+                        <div id="controls-rocker"></div>
+                        <button role="BUTTON_UP" class="button up joydirection" data-key="Up"
+                            id="joystick_btn_up">U</button>
+                        <button role="BUTTON_RIGHT" class="button right joydirection" data-key="Right"
+                            id="joystick_btn_right">R</button>
+                        <button role="BUTTON_DOWN" class="button down joydirection" data-key="Down"
+                            id="joystick_btn_down">D</button>
+                        <button role="BUTTON_LEFT" class="button left joydirection" data-key="Left"
+                            id="joystick_btn_left">L</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="function">
+            <button class="button" data-key="Select">Select</button>
+            <button class="button" data-key="Start">Start</button>
+        </div>
+        <div id="buttons" class="action">
+            <button class="button" data-key="A">A</button>
+            <button class="button" data-key="B">B</button>
+        </div>
+    </div>
+    <script>
+        const is_https = window.location.protocol == 'https:';
+        const ws = new WebSocket(`${is_https ? 'wss' : 'ws'}://${location.host}/ws`);
+        ws.binaryType = "arraybuffer";
+        let playerId = null;
+        let buttonState = 0x00;
+
+        ws.onmessage = (event) => {
+            const data = new Uint8Array(event.data);
+            playerId = 2;
+        };
+
+        const buttonMap = { B: 7, A: 6, Select: 5, Start: 4, Up: 3, Down: 2, Left: 1, Right: 0 };
+        const allDirection = (1 << buttonMap.Up) | (1 << buttonMap.Down) | (1 << buttonMap.Left) | (1 << buttonMap.Right)
+
+        function sendState() {
+            if (playerId !== null)
+                ws.send(Uint8Array.from([playerId, buttonState]));
+        }
+
+        function updateButton(key, pressed) {
+            console.log('key', key, pressed);
+            const bit = buttonMap[key];
+            if (pressed)
+                buttonState |= (1 << bit);
+            else
+                buttonState &= ~(1 << bit);
+            sendState();
+        }
+
+        document.querySelectorAll('.button').forEach(btn => {
+            const key = btn.dataset.key;
+            btn.addEventListener('mousedown', () => updateButton(key, true));
+            btn.addEventListener('mouseup', () => updateButton(key, false));
+            btn.addEventListener('touchstart', e => { e.preventDefault(); updateButton(key, true); });
+            btn.addEventListener('touchend', e => { e.preventDefault(); updateButton(key, false); });
+        });
+
+        const joystick = nipplejs.create({
+            zone: document.getElementById('controls-rocker'),
+            mode: 'static',//模式，static就是摇杆中心固定
+            position: { left: '50%', top: '50%' },//让摇杆容器定位到用户设置容器的正中心
+            color: 'blue'
+        });
+
+        joystick.on('move', (evt, data) => {
+            // Clear previous directional bits
+            buttonState &= ~(allDirection);
+
+            const x = data.vector?.x || 0;
+            const y = -(data.vector?.y || 0);
+
+            const dead = 0.3;
+
+            const nextState = {
+                Left: x < -dead,
+                Right: x > dead,
+                Up: y > dead,
+                DOMException: y < -dead
+            };
+
+            Object.keys(nextState).forEach(k => {
+                buttonState |= (1 << buttonMap[k])
+            });
+            sendState();
+        });
+
+        joystick.on('end', () => {
+            // Release all directions
+            buttonState &= ~(allDirection);
+            sendState();
+        });
+    </script>
+</body>
+
+</html>

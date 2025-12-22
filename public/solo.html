@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Mobile NES Solo</title>
+    <script src="lib/jsnes.min.js"></script>
+    <script src="lib/nipplejs.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+        body {
+            margin: 0;
+            background: black;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        canvas {
+            display: block;
+            margin: auto;
+            image-rendering: pixelated;
+        }
+
+        #rom-selector {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            overflow: auto;
+            padding: 10px;
+            font-size: 1.2em;
+            display: flex;
+            flex-direction: column;
+            z-index: 2000;
+            align-items: center;
+        }
+
+        #rom-selector button {
+            display: block;
+            margin: 3px 0;
+            font-size: 1em;
+            padding: 8px;
+        }
+
+        /* Floating joystick */
+        #joystick {
+            position: absolute;
+            bottom: 20px;
+            left: 10px;
+            width: 150px;
+            height: 150px;
+            z-index: 1000;
+        }
+
+        /* Floating buttons */
+        #action-area {
+            position: absolute;
+            bottom: 20px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            opacity: 0.6;
+            z-index: 1000;
+            touch-action: none;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row;
+            width: 95%;
+            justify-content: space-between;
+            margin-left: 20px;
+            margin-right: 20px;
+        }
+
+        .button {
+            width: 60px;
+            height: 60px;
+            margin: 5px;
+            font-size: 20px;
+        }
+
+        .controller-area {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: row;
+        }
+
+        .controller {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            align-self: flex-end;
+            filter: drop-shadow(5px 5px 0px rgba(255, 255, 255, .8));
+        }
+
+        .controller button {
+            position: absolute;
+            z-index: 1;
+            border: 8px solid #474f51;
+            background: #857b7a;
+            color: transparent;
+            border-radius: 15px;
+            box-sizing: border-box;
+            outline: 0;
+            width: 56px;
+            height: 56px;
+            left: 50%;
+            top: 50%;
+            user-select: none;
+            transform: translate(-50%, -50%);
+        }
+
+        .controller::before {
+            content: '';
+            position: absolute;
+            z-index: 0;
+            pointer-events: none;
+            box-sizing: border-box;
+            left: 50%;
+            top: 50%;
+            width: 56px;
+            height: 56px;
+            background: #857b7a;
+            transform: translate(-50%, -50%);
+        }
+
+        .controller::after {
+            content: '';
+            z-index: 2;
+            position: absolute;
+            pointer-events: none;
+            box-sizing: border-box;
+            width: 42px;
+            height: 42px;
+            border: 8px solid #474f51;
+            border-radius: 50%;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: inset 0px 8px 0 0px #736a6d, inset 0px -8px 0 0px rgba(255, 255, 255, .4);
+        }
+
+        button.up.joydirection {
+            top: 0;
+            transform: translate(-50%, 0);
+            border-bottom: 0;
+            height: 50px;
+            border-bottom-right-radius: 0;
+            border-bottom-left-radius: 0;
+            box-shadow: inset 0px 8px 0 0px rgba(255, 255, 255, .5);
+        }
+
+        button.right.joydirection {
+            left: auto;
+            right: 0;
+            transform: translate(0, -50%);
+            border-left: 0;
+            width: 50px;
+            border-bottom-left-radius: 0;
+            border-top-left-radius: 0;
+            box-shadow: inset 8px 0 0 0px #857b7a, inset 6px 6px 0 0px rgba(255, 255, 255, .4), inset 8px -8px 0 0px rgba(0, 0, 0, .1);
+        }
+
+        button.down.joydirection {
+            top: auto;
+            transform: translate(-50%, 0);
+            bottom: 0;
+            border-top: 0;
+            height: 50px;
+            border-top-right-radius: 0;
+            border-top-left-radius: 0;
+            box-shadow: inset 0px -8px 0 0px rgba(0, 0, 0, .1);
+        }
+
+        button.left.joydirection {
+            left: 0;
+            transform: translate(0, -50%);
+            border-right: 0;
+            width: 50px;
+            border-bottom-right-radius: 0;
+            border-top-right-radius: 0;
+            box-shadow: inset 0px 8px 0 0px rgba(255, 255, 255, .4), inset -8px 0px 0 0px #857b7a, inset -8px -8px 0 0px rgba(0, 0, 0, .1);
+        }
+
+        .function {
+            display: flex;
+            padding: 8px 15px;
+            border-radius: 50px;
+            align-self: center;
+            background: #da4a4a;
+            box-shadow: 5px 5px 0 rgba(255, 255, 255, .8);
+        }
+
+        .function button {
+            user-select: none;
+            margin: 10px;
+            height: 32px;
+            width: auto;
+            outline: 0;
+            border: 3px solid #474f51;
+            box-shadow: 0 0 0 8px rgba(255, 255, 255, .1), inset 4px 4px 0 0px rgba(255, 255, 255, .4);
+            background: #857b7a;
+            color: #000;
+            border-radius: 15px;
+        }
+
+        .action {
+            display: flex;
+            align-self: flex-end;
+        }
+
+        .action button {
+            margin: 10px;
+            user-select: none;
+            width: 56px;
+            height: 56px;
+            background: #857b7a;
+            border-radius: 50%;
+            outline: 0;
+            color: #000;
+            border: 8px solid #474f51;
+            box-shadow: 0 0 0 8px rgba(255, 255, 255, .8), inset 3px 6px 0 0px rgba(255, 255, 255, .4), inset -3px -6px 0 0px rgba(0, 0, 0, .1);
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="nes-canvas"></canvas>
+    <div id="rom-selector" style="display: none;">
+        <h2>选择游戏</h2>
+        <form id="rom-form"></form>
+    </div>
+
+    <!-- Joystick container -->
+    <div id="joystick">
+        <div class="controller-area">
+            <div class="controller">
+                <div id="controls-direction">
+                    <div id="controls-rocker"></div>
+                    <button role="BUTTON_UP" class="button up joydirection" data-key="Up"
+                        id="joystick_btn_up">U</button>
+                    <button role="BUTTON_RIGHT" class="button right joydirection" data-key="Right"
+                        id="joystick_btn_right">R</button>
+                    <button role="BUTTON_DOWN" class="button down joydirection" data-key="Down"
+                        id="joystick_btn_down">D</button>
+                    <button role="BUTTON_LEFT" class="button left joydirection" data-key="Left"
+                        id="joystick_btn_left">L</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right-side action buttons -->
+    <div id="action-area">
+        <div class="action">
+            <button class="button" data-key="SELECT">S</button>
+            <button class="button" data-key="START">*</button>
+        </div>
+        <div class="action">
+            <button class="button" data-key="A">A</button>
+            <button class="button" data-key="B">B</button>
+        </div>
+    </div>
+
+    <script>
+        // -----------------------
+        // ROM list
+        // -----------------------
+        const ROMS = {
+            "经典热门": [
+                ['沙罗曼蛇 (U) Life Force [!]', 'roms/Life Force [!].nes'],
+                ['超级马里奥1 (W) Super Mario Bros. [!]', 'roms/(W) Super Mario Bros. [!].nes'],
+                ['坦克 (J) Battle City [!]', 'roms/(J) Battle City.nes'],
+                ['魂斗罗1 (U) 30S [!]', 'roms/Contra1(U)30S.nes'],
+                ['赤影战士 Kage [!]', 'roms/Kage.nes'],
+                ['脱狱 Cross Fire (J)', 'roms/Cross Fire (J).nes'],
+                ['双截龙2 Double Dragon2 [!]', 'roms/Double Dragon2.nes'],
+                ['塞尔达传说2：林克的冒险 [!] Zelda II - The Adventure of Link(U) [!]', 'roms/Zelda II - The Adventure of Link (U).nes'],
+                ['冒险岛1 (J) Adventure Island [!]', 'roms/(J) Takahashi Meijin no Bouken Shima [!].nes'],
+                ['1943 (U) 1943 - The Battle of Midway [!]', 'roms/1943.nes'],
+                ['火箭车 (J) Road Fighter [!]', 'roms/(J) Road Fighter [!].nes'],
+                ['越野机车 (JU) Excitebike [!]', 'roms/(JU) Excitebike [!].nes'],
+                ['功夫 (J) (V1.2) Yie Ar Kung-Fu [!]', 'roms/(J) (V1.2) Yie Ar Kung-Fu [!].nes'],
+                ['淘金者(汉化) [!]', 'roms/TaoJinZhe.nes'],
+                ['俄罗斯方块 (U) Tetris 2 [!]', 'roms/Tetris 2 (U) [!].nes'],
+                ['中国象棋 [!]', 'roms/Zhong Guo Xiang Qi.nes'],
+                ['五子棋 (5) 日版 [!]', 'roms/5.nes'],
+                ['炸弹人1 [!] (J) Bomberman [!]', 'roms/(J) Bomberman [!].nes'],
+            ],
+            "超级玛丽": [
+                ['超级马里奥1 (W) Super Mario Bros. [!]', 'roms/(W) Super Mario Bros. [!].nes'],
+                ['超级马里奥2 (W) Super Mario Bros. 3 (U)', 'roms/Super Mario Bros. 3 (U) (PRG1) [!].nes'],
+                ['马里奥拆屋工 (W) Wrecking Crew', 'roms/(W) Wrecking Crew [!].nes'],
+                ['马里奥医生 (JU) Dr. Mario', 'roms/Dr. Mario (JU).nes'],
+            ],
+            "坦克大战": [
+                ['坦克大战 (J) Battle City [!]', 'roms/(J) Battle City.nes'],
+                ['导弹坦克 (Ch) Missile Tank', 'roms/(Ch) Missile Tank.nes'],
+                ['坦克1990 (Ch) Tank 1990', 'roms/(Ch) Tank 1990.nes'],
+            ],
+            "魂斗罗": [
+                ['魂斗罗1 (U) 30S [!]', 'roms/Contra1(U)30S.nes'],
+                ['魂斗罗1 (U) 30', 'roms/Contra1(U)30.nes'],
+                ['魂斗罗1 (U) 30F', 'roms/Contra1(U)30F.nes'],
+                ['魂斗罗1 (U) 30L', 'roms/Contra1(U)30L.nes'],
+                ['魂斗罗1 (U) 30M', 'roms/Contra1(U)30M.nes'],
+                ['魂斗罗1 (U) S [!]', 'roms/Contra1(U)S.nes'],
+                ['魂斗罗1 (U) F', 'roms/Contra1(U)F.nes'],
+                ['魂斗罗1 (U) L', 'roms/Contra1(U)L.nes'],
+                ['魂斗罗1 (U) M', 'roms/Contra1(U)M.nes'],
+            ],
+            "双截龙": [
+                ['双截龙2 Double Dragon2 [!]', 'roms/Double Dragon2.nes'],
+                ['双截龙1 Double Dragon1', 'roms/Double Dragon1.nes'],
+                ['双截龙3 Double Dragon3', 'roms/Double Dragon3.nes'],
+                ['双截龙4 Double Dragon4', 'roms/Double Dragon4.nes'],
+            ],
+            "淘金者": [
+                ['淘金者(汉化) [!]', 'roms/TaoJinZhe.nes'],
+                ['淘金者(J)', 'roms/Championship Lode Runner (J).nes'],
+            ],
+            "俄罗斯方块": [
+                ['俄罗斯方块2 (U) Tetris 2 [!]', 'roms/Tetris 2 (U) [!].nes'],
+                ['俄罗斯方块 LJ65', 'roms/lj65.nes'],
+                ['俄罗斯方块 Tetris(U)', 'roms/Tetris (U) [!].nes'],
+                ['俄罗斯方块 (Tengen) Tetris [!]', 'roms/(Tengen) Tetris [!].nes'],
+            ],
+            "飞机类": [
+                ['沙罗曼蛇 (U) Life Force [!]', 'roms/Life Force [!].nes'],
+                ['1943 (U) 1943 - The Battle of Midway [!]', 'roms/1943.nes'],
+                ['兵蜂1 (J) TwinBee [!]', 'roms/(J) TwinBee [!].nes'],
+            ],
+            "赛车类": [
+                ['火箭车 (J) Road Fighter [!]', 'roms/(J) Road Fighter [!].nes'],
+                ['越野机车 (JU) Excitebike [!]', 'roms/(JU) Excitebike [!].nes'],
+                ['F1赛车 (J) F-1 Race', 'roms/(J) F-1 Race [!].nes'],
+                ['摩托车大赛 (JU) (PRG0) Mach Rider', 'roms/(JU) (PRG0) Mach Rider [!].nes'],
+            ],
+            "运动类": [
+                ['网球Tennis(JU)', 'roms/Tennis (JU) [!].nes'],
+                ['高尔夫 Golf (JU)', 'roms/Golf (JU).nes'],
+            ],
+            "棋牌类": [
+                ['中国象棋 [!]', 'roms/Zhong Guo Xiang Qi.nes'],
+                ['五子棋 (5) 日版 [!]', 'roms/5.nes'],
+                ['Concentration Room', 'roms/croom.nes'],
+                ['AV麻雀俱乐部 (Hacker) AV Mahjongg', 'roms/(Hacker) AV Mahjongg.nes'],
+            ],
+            "其他": [
+                ['马戏团 (J) Circus Charlie', 'roms/(J) Circus Charlie [!].nes'],
+                ['敲冰块 (J) Ice Climber', 'roms/(J) Ice Climber.nes'],
+                ['纽约大拳猫 (JP)', 'roms/RockinCats.nes'],
+                ['撞球咖啡馆 Shufflepuck Cafe', 'roms/Shufflepuck Cafe.nes'],
+                ['泡泡龙 Bubble Bobble (U)', 'roms/Bubble Bobble (U).nes'],
+                ['地底探险1 (J) Spelunker', 'roms/(J) Spelunker [!].nes'],
+                ['快乐猫 (J) Mappy', 'roms/(J) Mappy [!].nes'],
+                ['成龙踢馆1 (J) Spartan X', 'roms/(J) Spartan X [!].nes'],
+                ['猪小弟 (J) Pooyan', 'roms/(J) Pooyan.nes'],
+                ['打砖块1 (J) Arkanoid', 'roms/(J) Arkanoid [!].nes'],
+            ],
+            "不可用": [
+                ['小蜜蜂 (J) Galaxian', 'roms/(J) Galaxian [!].nes'],
+                ['赤色要塞 (KC) Jackal [!]', 'roms/Jackal.nes'],
+                ['花式撞球 (U) Side Pocket', 'roms/Side Pocket.nes'],
+                ['彩虹岛 (U) Rainbow Islands', 'roms/Rainbow Islands.nes'],
+                ['快打旋风 (U) Mighty Final Fight [!]', 'roms/Mighty Final Fight.nes'],
+                ['忍者龙剑传1 (PC10) Ninja Gaiden [!]', 'roms/Ninja_Gaiden1.nes'],
+                ['忍者龙剑传2 (PC10) Ninja Gaiden II [!]', 'roms/Ninja_Gaiden2.nes'],
+                ['忍者龙剑传3 (PC10) Ninja Gaiden III [!]', 'roms/Ninja_Gaiden3.nes'],
+                ['七宝奇谋1 (J) Goonies, The [!]', 'roms/(J) Goonies, The [!].nes'],
+                ['南极大冒险 (J) Antarctic Adventure', 'roms/(J) Antarctic Adventure [!].nes'],
+                ['叮当1 (J) Dig Dug', 'roms/(J) Dig Dug [!].nes'],
+                ['影之传说 (J) Kage no Densetsu [!]', 'roms/(J) Kage no Densetsu [!].nes'],
+            ],
+        };
+
+        // -----------------------
+        // Canvas setup
+        // -----------------------
+        const offscreen = document.createElement('canvas');
+        offscreen.width = 256;
+        offscreen.height = 240;
+        const offCtx = offscreen.getContext('2d');
+        const canvas = document.getElementById('nes-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const scaleX = Math.floor(window.innerWidth / 256);
+            const scaleY = Math.floor(window.innerHeight / 240);
+            const scale = Math.min(scaleX, scaleY);
+            canvas.width = 256 * scale;
+            canvas.height = 240 * scale;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // -----------------------
+        // Web Audio
+        // -----------------------
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const scriptNode = audioCtx.createScriptProcessor(1024, 0, 2);
+        let audioL = [], audioR = [];
+        scriptNode.onaudioprocess = e => {
+            const outL = e.outputBuffer.getChannelData(0);
+            const outR = e.outputBuffer.getChannelData(1);
+            for (let i = 0; i < outL.length; i++) {
+                outL[i] = audioL.length ? audioL.shift() : 0;
+                outR[i] = audioR.length ? audioR.shift() : 0;
+            }
+        };
+        scriptNode.connect(audioCtx.destination);
+        function onAudioSample(l, r) {
+            audioL.push(l);
+            audioR.push(r);
+        }
+
+        // -----------------------
+        // JSNES
+        // -----------------------
+        const nes = new jsnes.NES({ onFrame: onFrame, onAudioSample: onAudioSample });
+
+        // -----------------------
+        // Populate ROM selector
+        // -----------------------
+        const form = document.getElementById('rom-form');
+        let firstRadio = null;
+
+        // Dynamically populate radio buttons
+        for (const cat in ROMS) {
+            const catHeader = document.createElement('strong');
+            catHeader.textContent = cat;
+            form.appendChild(catHeader);
+            form.appendChild(document.createElement('br'));
+
+            ROMS[cat].forEach(([name, path], index) => {
+                const id = `rom-${cat}-${index}`;
+
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = 'rom';
+                radio.value = path;
+                radio.id = id;
+
+                const label = document.createElement('label');
+                label.setAttribute('for', id);
+                label.textContent = name;
+
+                form.appendChild(radio);
+                form.appendChild(label);
+                form.appendChild(document.createElement('br'));
+
+                if (!firstRadio)
+                    firstRadio = radio;
+            });
+        }
+
+        // Focus first radio on load
+        if (firstRadio) firstRadio.focus();
+
+        // Listen for change or Enter/Space
+        form.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                const selected = form.querySelector('input[type=radio]:checked');
+                if (selected)
+                    loadROM(selected.value);
+                e.preventDefault();
+            }
+        });
+
+        form.addEventListener('click', e => {
+            const selected = form.querySelector('input[type=radio]:checked');
+            if (selected)
+                loadROM(selected.value);
+            e.preventDefault();
+        });
+
+        // -----------------------
+        // Load ROM + unlock audio
+        // -----------------------
+        function loadROM(path) {
+            if (audioCtx.state === 'suspended')
+                audioCtx.resume();
+
+            fetch(path)
+                .then(r => r.arrayBuffer())
+                .then(b => nes.loadROM(new Uint8Array(b)))
+                .then(() => document.getElementById('rom-selector').style.display = 'none')
+                .catch(err => console.error(err));
+        }
+
+        // -----------------------
+        // On-screen right buttons
+        // -----------------------
+        const buttonMap = {
+            'A': jsnes.Controller.BUTTON_A,
+            'B': jsnes.Controller.BUTTON_B,
+            'SELECT': jsnes.Controller.BUTTON_SELECT,
+            'START': jsnes.Controller.BUTTON_START
+        };
+
+        document.querySelectorAll('#action-area button').forEach(btn => {
+            const code = buttonMap[btn.dataset.button];
+            btn.addEventListener('touchstart', () => nes.buttonDown(1, code));
+            btn.addEventListener('touchend', () => nes.buttonUp(1, code));
+            btn.addEventListener('mousedown', () => nes.buttonDown(1, code));
+            btn.addEventListener('mouseup', () => nes.buttonUp(1, code));
+        });
+
+        // -----------------------
+        // Turbo A button
+        // -----------------------
+        const turboFreq = 20;
+        let turboToggle = false;
+        setInterval(() => {
+            turboToggle = !turboToggle;
+            if (turboToggle)
+                nes.buttonDown(1, jsnes.Controller.BUTTON_A);
+            else
+                nes.buttonUp(1, jsnes.Controller.BUTTON_A);
+        }, 1000 / turboFreq);
+
+        // -----------------------
+        // Virtual joystick left
+        // -----------------------
+        const joystick = nipplejs.create({
+            zone: document.getElementById('controls-rocker'),
+            mode: 'static',//模式，static就是摇杆中心固定
+            position: { left: '50%', top: '50%' },//让摇杆容器定位到用户设置容器的正中心
+            color: 'blue'
+        });
+
+        const joyState = {
+            left: false,
+            right: false,
+            up: false,
+            down: false
+        };
+
+        function applyJoyStick(nextState) {
+            for (const dir in joyState) {
+                if (joyState[dir] !== nextState[dir]) {
+                    const btn = jsnes.Controller['BUTTON_' + dir.toUpperCase()];
+                    nextState[dir]
+                        ? nes.buttonDown(1, btn)
+                        : nes.buttonUp(1, btn);
+                }
+            }
+            Object.assign(joyState, nextState);
+        }
+
+        joystick.on('move', (evt, data) => {
+            const x = data.vector?.x || 0;
+            const y = -(data.vector?.y || 0);
+
+            const dead = 0.3;
+
+            const nextState = {
+                left: x < -dead,
+                right: x > dead,
+                up: y > dead,
+                down: y < -dead
+            };
+
+            applyJoyStick(nextState);
+        });
+        
+        joystick.on('end', () => {
+            applyJoyStick({
+                left: false,
+                right: false,
+                up: false,
+                down: false
+            });
+        });
+
+        // -----------------------
+        // Frame rendering
+        // -----------------------
+        function onFrame(frameBuffer) {
+            const imgData = offCtx.createImageData(256, 240);
+            for (let i = 0; i < frameBuffer.length; i++)
+                imgData.data[i] = frameBuffer[i];
+            offCtx.putImageData(imgData, 0, 0);
+
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(offscreen, 0, 0, canvas.width, canvas.height);
+        }
+    </script>
+</body>
+
+</html>
