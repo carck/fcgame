@@ -217,10 +217,10 @@
 
         ws.onmessage = (event) => {
             const data = new Uint8Array(event.data);
-            playerId = 2;
+            playerId = 1;
         };
 
-        const buttonMap = { B: 7, A: 6, Select: 5, Start: 4, Up: 3, Down: 2, Left: 1, Right: 0 };
+        const buttonMap = { A: 7, B: 6, Select: 5, Start: 4, Up: 3, Down: 2, Left: 1, Right: 0 };
         const allDirection = (1 << buttonMap.Up) | (1 << buttonMap.Down) | (1 << buttonMap.Left) | (1 << buttonMap.Right)
 
         function sendState() {
