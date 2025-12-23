@@ -230,9 +230,13 @@ JSNES.TVUI = function (nes) {
 
     this.loadROM = (path) => {
         // Resume audio context
-        var source = this.audio.createBufferSource();
-        source.connect(this.audio.destination);
-        source.start();
+        if (!this.nes.opts.emulateSound) {
+            this.nes.opts.emulateSound = true;
+
+            var source = this.audio.createBufferSource();
+            source.connect(this.audio.destination);
+            source.start();
+        }
 
         const self = this;
 
@@ -281,7 +285,9 @@ JSNES.TVUI = function (nes) {
 
         ps.turboMask = 0x00;
         for (let bit = 0; bit < 8; bit++) {
-            if (turboButtons[bit] && (state & (1 << bit)))
+            const mask = 1 << (7 - bit);
+            const pressed = (state & mask) !== 0;
+            if (turboButtons[bit] && pressed)
                 ps.turboMask |= (1 << bit);
         }
 

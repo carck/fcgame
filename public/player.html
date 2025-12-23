@@ -3,6 +3,7 @@
 
 <head>
     <title>NES Controller</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
     <script src="lib/nipplejs.min.js"></script>
     <style>
         body {
@@ -11,6 +12,7 @@
             display: flex;
             flex-direction: column;
             justify-content: space-around;
+            user-select: none;
         }
 
         h2 {
@@ -20,8 +22,7 @@
         .container {
             display: flex;
             flex-direction: row;
-            width: 95%;
-            justify-content: space-between;
+            justify-content: space-around;
             margin-left: 20px;
             margin-right: 20px;
         }
@@ -161,11 +162,11 @@
 
         .action {
             display: flex;
-            align-self: flex-end;
+            align-self: center;
         }
 
         .action button {
-            margin: 10px;
+            margin: 15px;
             user-select: none;
             width: 56px;
             height: 56px;
@@ -246,40 +247,41 @@
             btn.addEventListener('touchend', e => { e.preventDefault(); updateButton(key, false); });
         });
 
-        const joystick = nipplejs.create({
-            zone: document.getElementById('controls-rocker'),
-            mode: 'static',//模式，static就是摇杆中心固定
-            position: { left: '50%', top: '50%' },//让摇杆容器定位到用户设置容器的正中心
-            color: 'blue'
+        function select(val) {
+            if (val.substring(0, 1) == "#") {
+                return document.querySelector(val);
+            } else {
+                return document.getElementById(val);
+            }
+        }
+
+        const joyMap = {
+            87: 'Up',
+            83: 'Down',
+            65: 'Left',
+            68: 'Right'
+        }
+
+        function touchDwon(evt) {
+            updateButton(joyMap[evt.keyCode], true)
+        };
+
+        function touchUp(evt) {
+            updateButton(joyMap[evt.keyCode], false)
+        };
+
+        var joystick = new Joystick({
+            el: select("controls-rocker"),
+            mode: 'static',
+            color: "#808080",
+            size: 100,
+            isFourBtn: false,
+            keyCodes: [87, 83, 65, 68],
+            btn_down_fn: touchDwon,
+            btn_up_fn: touchUp,
+            relative: true,
         });
-
-        joystick.on('move', (evt, data) => {
-            // Clear previous directional bits
-            buttonState &= ~(allDirection);
-
-            const x = data.vector?.x || 0;
-            const y = -(data.vector?.y || 0);
-
-            const dead = 0.3;
-
-            const nextState = {
-                Left: x < -dead,
-                Right: x > dead,
-                Up: y > dead,
-                DOMException: y < -dead
-            };
-
-            Object.keys(nextState).forEach(k => {
-                buttonState |= (1 << buttonMap[k])
-            });
-            sendState();
-        });
-
-        joystick.on('end', () => {
-            // Release all directions
-            buttonState &= ~(allDirection);
-            sendState();
-        });
+        joystick.init();
     </script>
 </body>
 
