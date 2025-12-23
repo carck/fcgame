@@ -445,13 +445,14 @@ if (typeof jQuery !== 'undefined') {
                     e.preventDefault();
                 });
                 $('#joystick_btn_B').bind('touchstart', function (e) {
-                    console.log("b");
+                    console.log("b down");
                     self.nes.keyboard.keyDown({
                         keyCode: 75
                     });
                     e.preventDefault();
                 });
                 $('#joystick_btn_B').bind('touchend', function (e) {
+                    console.log("b up");
                     self.nes.keyboard.keyUp({
                         keyCode: 75
                     });
@@ -505,10 +506,10 @@ if (typeof jQuery !== 'undefined') {
                     $('#controls-fire .a').removeClass('active');
                     $('#controls-fire .b').removeClass('active');
                     self.nes.keyboard.keyUp({
-                        keyCode: 88
+                        keyCode: 74
                     });
                     self.nes.keyboard.keyUp({
-                        keyCode: 90
+                        keyCode: 75
                     });
                     e.preventDefault();
                 });
@@ -529,10 +530,10 @@ if (typeof jQuery !== 'undefined') {
                     $('#controls-turbofire .a').removeClass('active');
                     $('#controls-turbofire .b').removeClass('active');
                     self.nes.keyboard.keyUp({
-                        keyCode: 88
+                        keyCode: 74
                     });
                     self.nes.keyboard.keyUp({
-                        keyCode: 90
+                        keyCode: 75
                     });
                     e.preventDefault();
                 });

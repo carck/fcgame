@@ -13,30 +13,34 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-type Player struct {
-	ID int
-	Conn *websocket.Conn
-}
+/*
+   ======================
+   Global state
+   ======================
+*/
 
 var (
-	tvConn       *websocket.Conn
+	// TV connection
+	tvConn  *websocket.Conn
+	tvSend  chan []byte
+	tvMutex sync.Mutex
+
+	// Players
 	playerIDSeq  = 1
 	players      = make(map[int]*websocket.Conn)
-	playersMutex = &sync.Mutex{}
+	playersMutex sync.Mutex
 )
 
-func wsHandler(w http.ResponseWriter, r *http.Request) {
+/*
+   ======================
+   Player WebSocket (/ws)
+   ======================
+*/
+
+func wsPlayerHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("Upgrade error:", err)
-		return
-	}
-
-	// First connection is TV
-	if tvConn == nil {
-		tvConn = conn
-		log.Println("TV connected")
-		go readLoopTV(conn)
 		return
 	}
 
@@ -49,11 +53,51 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("Player connected:", id)
 
-	// Send player ID as first message (1 byte)
-	conn.WriteMessage(websocket.BinaryMessage, []byte{byte(id)})
+	// Send player ID (1 byte)
+	if err := conn.WriteMessage(websocket.BinaryMessage, []byte{byte(id)}); err != nil {
+		conn.Close()
+		return
+	}
 
 	go readLoopPlayer(id, conn)
 }
+
+/*
+   ======================
+   TV WebSocket (/ws-tv)
+   ======================
+*/
+
+func wsTVHandler(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println("Upgrade error:", err)
+		return
+	}
+
+	tvMutex.Lock()
+	if tvConn != nil {
+		tvMutex.Unlock()
+		log.Println("TV already connected, rejecting")
+		conn.Close()
+		return
+	}
+
+	tvConn = conn
+	tvSend = make(chan []byte, 256)
+	tvMutex.Unlock()
+
+	log.Println("TV connected")
+
+	go tvWriteLoop(conn, tvSend)
+	go readLoopTV(conn)
+}
+
+/*
+   ======================
+   Player read loop
+   ======================
+*/
 
 func readLoopPlayer(id int, conn *websocket.Conn) {
 	defer func() {
@@ -72,17 +116,40 @@ func readLoopPlayer(id int, conn *websocket.Conn) {
 		if mt != websocket.BinaryMessage {
 			continue
 		}
-		// Forward to TV
-		if tvConn != nil {
-			tvConn.WriteMessage(websocket.BinaryMessage, msg)
+
+		// Forward to TV safely
+		tvMutex.Lock()
+		send := tvSend
+		tvMutex.Unlock()
+
+		if send != nil {
+			select {
+			case send <- msg:
+			default:
+				// Drop if TV is slow
+			}
 		}
 	}
 }
 
+/*
+   ======================
+   TV read loop
+   ======================
+*/
+
 func readLoopTV(conn *websocket.Conn) {
 	defer func() {
 		conn.Close()
+
+		tvMutex.Lock()
+		if tvSend != nil {
+			close(tvSend)
+			tvSend = nil
+		}
 		tvConn = nil
+		tvMutex.Unlock()
+
 		log.Println("TV disconnected")
 	}()
 
@@ -91,14 +158,36 @@ func readLoopTV(conn *websocket.Conn) {
 		if err != nil {
 			return
 		}
-		// TV messages can be ignored in this simple relay
+		// TV messages ignored
 	}
 }
+
+/*
+   ======================
+   TV write loop
+   ======================
+*/
+
+func tvWriteLoop(conn *websocket.Conn, send <-chan []byte) {
+	for msg := range send {
+		if err := conn.WriteMessage(websocket.BinaryMessage, msg); err != nil {
+			return
+		}
+	}
+}
+
+/*
+   ======================
+   main
+   ======================
+*/
 
 func main() {
 	fs := http.FileServer(http.Dir("./public"))
 	http.Handle("/", fs)
-	http.HandleFunc("/ws", wsHandler)
+
+	http.HandleFunc("/ws", wsPlayerHandler)
+	http.HandleFunc("/ws-tv", wsTVHandler)
 
 	port := 9008
 	fmt.Println("Server running at :9008")

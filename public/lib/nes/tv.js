@@ -265,7 +265,7 @@ JSNES.TVUI = function (nes) {
     // WebSocket multiplayer
     // -----------------------
     const is_https = window.location.protocol == 'https:';
-    const ws = new WebSocket(`${is_https ? 'wss' : 'ws'}://${location.host}/ws`);
+    const ws = new WebSocket(`${is_https ? 'wss' : 'ws'}://${location.host}/ws-tv`);
     ws.binaryType = "arraybuffer";
 
     const turboButtons = { 0: true, 1: true }; // A and B buttons have turbo
