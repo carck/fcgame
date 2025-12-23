@@ -459,16 +459,15 @@ if (typeof jQuery !== 'undefined') {
                     e.preventDefault();
                 });
                 $('#joystick_btn_select').bind('touchstart', function (e) {
-                    console.log("select");
                     self.nes.keyboard.keyDown({
-                        keyCode: 17
+                        keyCode: 32
                     });
                     $('#joystick_btn_select').addClass('active');
                     e.preventDefault();
                 });
                 $('#joystick_btn_select').bind('touchend', function (e) {
                     self.nes.keyboard.keyUp({
-                        keyCode: 17
+                        keyCode: 32
                     });
                     $('#joystick_btn_select').removeClass('active');
                     e.preventDefault();
