@@ -100,7 +100,7 @@ func main() {
 	http.Handle("/", fs)
 	http.HandleFunc("/ws", wsHandler)
 
-	port := 8080
-	fmt.Println("Server running at :8080")
+	port := 9008
+	fmt.Println("Server running at :9008")
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
