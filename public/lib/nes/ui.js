@@ -489,30 +489,6 @@ if (typeof jQuery !== 'undefined') {
                     e.preventDefault();
                 });
 
-                $('#controls-fire').bind('touchstart', function (e) {
-                    handleFire(e);
-                    e.preventDefault();
-                });
-                $('#controls-fire').bind('gesturestart', function (e) {
-                    handleFire(e, true);
-                    e.preventDefault();
-                });
-                $('#controls-fire').bind('touchmove', function (e) {
-                    handleFire(e);
-                    e.preventDefault();
-                });
-                $('#controls-fire').bind('touchend', function (e) {
-                    clearInterval(self.interval);
-                    $('#controls-fire .a').removeClass('active');
-                    $('#controls-fire .b').removeClass('active');
-                    self.nes.keyboard.keyUp({
-                        keyCode: 74
-                    });
-                    self.nes.keyboard.keyUp({
-                        keyCode: 75
-                    });
-                    e.preventDefault();
-                });
                 $('#controls-turbofire').bind('touchstart', function (e) {
                     handleFire(e, true);
                     e.preventDefault();
