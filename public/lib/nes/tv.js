@@ -110,80 +110,145 @@ const ROMS = {
 JSNES.TVUI = function (nes) {
     this.nes = nes;
 
-    this.canvasContext = document.getElementById('nes-canvas').getContext('2d');
-    this.canvasImageData = this.canvasContext.getImageData(0, 0, 256, 240);
+    // =========================
+    // 图像处理
+    // =========================
+    const canvas = document.getElementById('nes-canvas');
+    const gl = canvas.getContext('webgl', { alpha: false, antialias: false });
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.BLEND);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
 
-    this.resetCanvas = () => {
-        this.canvasContext.fillStyle = 'black';
-        // set alpha to opaque
-        this.canvasContext.fillRect(0, 0, 256, 240);
-        // Set alpha
-        for (var i = 3; i < this.canvasImageData.data.length - 3; i += 4) {
-            this.canvasImageData.data[i] = 0xFF;
+    function shader(type, src) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        return s;
+    }
+
+    const vs = shader(gl.VERTEX_SHADER, `
+        attribute vec2 a_pos;
+        attribute vec2 a_uv;
+        varying vec2 v_uv;
+        void main() {
+            v_uv = vec2(a_uv.x, 1.0 - a_uv.y);
+            gl_Position = vec4(a_pos, 0.0, 1.0);
         }
+    `);
+
+    const fs = shader(gl.FRAGMENT_SHADER, `
+        precision mediump float;
+        uniform sampler2D u_tex;
+        varying vec2 v_uv;
+        void main() {
+            gl_FragColor = texture2D(u_tex, v_uv);
+        }
+    `);
+
+    const prog = gl.createProgram();
+    gl.attachShader(prog, vs);
+    gl.attachShader(prog, fs);
+    gl.linkProgram(prog);
+    gl.useProgram(prog);
+
+    const vbo = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+        -1, -1, 0, 0,
+        1, -1, 1, 0,
+        -1, 1, 0, 1,
+        1, 1, 1, 1,
+    ]), gl.STATIC_DRAW);
+
+    const FSIZE = 4 * 4;
+    const aPos = gl.getAttribLocation(prog, 'a_pos');
+    const aUV = gl.getAttribLocation(prog, 'a_uv');
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, FSIZE, 0);
+    gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, FSIZE, 8);
+    gl.enableVertexAttribArray(aPos);
+    gl.enableVertexAttribArray(aUV);
+
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 240, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+    const NES_ASPECT = 4 / 3;
+
+    function resizeGL() {
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        const screenAspect = w / h;
+        let vw, vh, vx, vy;
+        if (screenAspect > NES_ASPECT) {
+            vh = h;
+            vw = vh * NES_ASPECT;
+            vx = (w - vw) / 2;
+            vy = 0;
+        } else {
+            vw = w;
+            vh = vw / NES_ASPECT;
+            vx = 0;
+            vy = (h - vh) / 2;
+        }
+        canvas.width = w;
+        canvas.height = h;
+        gl.viewport(vx, vy, vw, vh);
+        canvas.style.imageRendering = 'pixelated';
+        canvas.style.imageRendering = 'crisp-edges';
+    }
+
+    window.addEventListener('resize', resizeGL);
+    resizeGL();
+
+    // =========================
+    // NES framebuffer RGBA 缓冲区
+    // =========================
+
+    this.writeFrame = buffer => {
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 256, 240, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(buffer.buffer));
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     };
 
+    /* =========================
+    * 状态显示
+    * ========================= */
     this.enable = function () { };
     this.updateStatus = function () { };
-    this.writeAudio = (samples) => {
-        // Create output buffer (planar buffer format)
+
+    /* =========================
+    * 音频处理
+    * ========================= */
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+    this.audio = new AudioContext({ latencyHint: 'interactive' });
+
+    this.writeAudio = samples => {
+        if (!this.audio)
+            return;
         var buffer = this.audio.createBuffer(2, samples.length, this.audio.sampleRate);
         var channelLeft = buffer.getChannelData(0);
         var channelRight = buffer.getChannelData(1);
-        // Convert from interleaved buffer format to planar buffer
-        // by writing right into appropriate channel buffers
         var j = 0;
         for (var i = 0; i < samples.length; i += 2) {
-            channelLeft[j] = this.intToFloatSample(samples[i]);
-            channelRight[j] = this.intToFloatSample(samples[i + 1]);
+            channelLeft[j] = samples[i] / 32768;
+            channelRight[j] = samples[i + 1] / 32768;
             j++;
         }
-        // Create sound source and play it
         var source = this.audio.createBufferSource();
         source.buffer = buffer;
-        source.connect(this.audio.destination); // Output to sound
-        // card
+        source.connect(this.audio.destination);
         source.start();
     };
 
-    this.intToFloatSample = (value) => {
-        return value / 32767; // from -32767..32768 to -1..1 range
-    };
-
-    this.writeFrame = (buffer, prevBuffer) => {
-        var imageData = this.canvasImageData.data;
-        var pixel, i, j;
-
-        for (i = 0; i < 256 * 240; i++) {
-            pixel = buffer[i];
-
-            if (pixel != prevBuffer[i]) {
-                j = i * 4;
-                imageData[j] = pixel & 0xFF;
-                imageData[j + 1] = (pixel >> 8) & 0xFF;
-                imageData[j + 2] = (pixel >> 16) & 0xFF;
-                prevBuffer[i] = pixel;
-            }
-        }
-
-        this.canvasContext.putImageData(this.canvasImageData, 0, 0);
-    };
-
-    this.resetCanvas();
-
-    window.AudioContext = window.webkitAudioContext || window.AudioContext;
-    try {
-        this.audio = new AudioContext();
-    } catch (e) {
-        console.error(e);
-    }
-
-    // -----------------------
-    // Populate ROM selector
-    // -----------------------
+    // =========================
+    // ROM 选择加载
+    // =========================
     const form = document.getElementById('rom-form');
 
-    // Dynamically populate radio buttons
     for (const cat in ROMS) {
         const catHeader = document.createElement('strong');
         catHeader.textContent = cat;
@@ -211,31 +276,20 @@ JSNES.TVUI = function (nes) {
 
     form.focus();
 
-    // Listen for change or Enter/Space
-    form.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            const selected = form.querySelector('input[type=radio]:checked');
-            if (selected)
-                this.loadROM(selected.value);
-            e.preventDefault();
-        }
-    });
-
     form.addEventListener('click', e => {
-        const selected = form.querySelector('input[type=radio]:checked');
+        const selected = e.target.value;
         if (selected)
-            this.loadROM(selected.value);
+            this.loadROM(selected);
         e.preventDefault();
     });
 
     this.loadROM = (path) => {
-        // Resume audio context
+        if (this.audio.state === 'suspended') {
+            this.audio.resume();
+        }
+
         if (!this.nes.opts.emulateSound) {
             this.nes.opts.emulateSound = true;
-
-            var source = this.audio.createBufferSource();
-            source.connect(this.audio.destination);
-            source.start();
         }
 
         const self = this;
@@ -262,7 +316,7 @@ JSNES.TVUI = function (nes) {
     }
 
     // -----------------------
-    // WebSocket multiplayer
+    // 输入处理
     // -----------------------
     const is_https = window.location.protocol == 'https:';
     const ws = new WebSocket(`${is_https ? 'wss' : 'ws'}://${location.host}/ws-tv`);
@@ -371,10 +425,30 @@ JSNES.TVUI = function (nes) {
         turboKeys[key] = false;
     };
 
-    document.addEventListener('keydown', (evt) => {
-        const active = document.activeElement;
-        if (evt.code === 'ArrowDown') active.nextElementSibling?.focus();
-        if (evt.code === 'ArrowUp') active.previousElementSibling?.focus();
-        if (evt.code === 'Enter') active.click();
+    // =========================
+    // 全局键盘导航 ROM 列表
+    // =========================
+    const radios = Array.from(document.querySelectorAll('#rom-form input[type=radio]'));
+    document.addEventListener('keydown', evt => {
+        let currentIndex = radios.findIndex(r => r.checked);
+        if (currentIndex === -1)
+            currentIndex = 0;
+
+        if (evt.code === 'ArrowDown') {
+            const nextIndex = (currentIndex + 1) % radios.length;
+            radios[nextIndex].focus();
+            radios[nextIndex].checked = true;
+            evt.preventDefault();
+        } else if (evt.code === 'ArrowUp') {
+            const prevIndex = (currentIndex - 1 + radios.length) % radios.length;
+            radios[prevIndex].focus();
+            radios[prevIndex].checked = true;
+            evt.preventDefault();
+        } else if (evt.code === 'Enter' || evt.code === ' ') {
+            const selected = radios.find(r => r.checked);
+            if (selected)
+                this.loadROM(selected.value);
+            evt.preventDefault();
+        }
     });
 };

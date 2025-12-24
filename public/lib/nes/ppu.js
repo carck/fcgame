@@ -173,10 +173,9 @@ JSNES.PPU.prototype = {
         
         // Variables used when rendering:
         this.attrib = new Array(32);
-        this.buffer = new Array(256*240);
-        this.prevBuffer = new Array(256*240);
-        this.bgbuffer = new Array(256*240);
-        this.pixrendered = new Array(256*240);
+        this.buffer = new Uint32Array(256*240);
+        this.bgbuffer = new Uint32Array(256*240);
+        this.pixrendered = new Uint32Array(256*240);
 
         this.validTileData = null;
 
@@ -474,27 +473,27 @@ JSNES.PPU.prototype = {
             switch (this.f_color) {
                 case 0:
                     // Black
-                    bgColor = 0x00000;
+                    bgColor = 0xFF000000;
                     break;
                 case 1:
                     // Green
-                    bgColor = 0x00FF00;
+                    bgColor = 0xFF00FF00;
                     break;
                 case 2:
                     // Blue
-                    bgColor = 0xFF0000;
+                    bgColor = 0xFFFF0000;
                     break;
                 case 3:
                     // Invalid. Use black.
-                    bgColor = 0x000000;
+                    bgColor = 0xFF000000;
                     break;
                 case 4:
                     // Red
-                    bgColor = 0x0000FF;
+                    bgColor = 0xFF0000FF;
                     break;
                 default:
                     // Invalid. Use black.
-                    bgColor = 0x0;
+                    bgColor = 0xFF000000;
             }
         }
         
@@ -519,20 +518,20 @@ JSNES.PPU.prototype = {
             if (this.sprX[0] >= 0 && this.sprX[0] < 256 &&
                     this.sprY[0] >= 0 && this.sprY[0] < 240) {
                 for (i=0; i<256; i++) {  
-                    buffer[(this.sprY[0]<<8)+i] = 0xFF5555;
+                    buffer[(this.sprY[0]<<8)+i] = 0xFFFF5555;
                 }
                 for (i=0; i<240; i++) {
-                    buffer[(i<<8)+this.sprX[0]] = 0xFF5555;
+                    buffer[(i<<8)+this.sprX[0]] = 0xFFFF5555;
                 }
             }
             // Hit position:
             if (this.spr0HitX >= 0 && this.spr0HitX < 256 &&
                     this.spr0HitY >= 0 && this.spr0HitY < 240) {
                 for (i=0; i<256; i++) {
-                    buffer[(this.spr0HitY<<8)+i] = 0x55FF55;
+                    buffer[(this.spr0HitY<<8)+i] = 0xFF55FF55;
                 }
                 for (i=0; i<240; i++) {
-                    buffer[(i<<8)+this.spr0HitX] = 0x55FF55;
+                    buffer[(i<<8)+this.spr0HitX] = 0xFF55FF55;
                 }
             }
         }
@@ -544,7 +543,7 @@ JSNES.PPU.prototype = {
             // Clip left 8-pixels column:
             for (y=0;y<240;y++) {
                 for (x=0;x<8;x++) {
-                    buffer[(y<<8)+x] = 0;
+                    buffer[(y<<8)+x] = 0xFF000000;
                 }
             }
         }
@@ -553,7 +552,7 @@ JSNES.PPU.prototype = {
             // Clip right 8-pixels column too:
             for (y=0; y<240; y++) {
                 for (x=0; x<8; x++) {
-                    buffer[(y<<8)+255-x] = 0;
+                    buffer[(y<<8)+255-x] = 0xFF000000;
                 }
             }
         }
@@ -563,7 +562,7 @@ JSNES.PPU.prototype = {
             for (y=0; y<8; y++) {
                 for (x=0; x<256; x++) {
                     buffer[(y<<8)+x] = 0;
-                    buffer[((239-y)<<8)+x] = 0;
+                    buffer[((239-y)<<8)+x] = 0xFF000000;
                 }
             }
         }
@@ -1684,7 +1683,7 @@ JSNES.PPU.PaletteTable.prototype = {
     },
     
     getRgb: function(r, g, b){
-        return ((r<<16)|(g<<8)|(b));
+        return (0xFF<<24|(r<<16)|(g<<8)|(b));
     },
     
     loadDefaultPalette: function(){
