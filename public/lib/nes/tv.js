@@ -276,8 +276,8 @@ JSNES.TVUI = function (nes) {
 
     ws.onmessage = (event) => {
         const data = new Uint8Array(event.data);
-        const playerId = data[0] & 0X0F;
-        const turboState = data[0] & OXF0;
+        const playerId = data[0] & 0x0F;
+        const turboState = data[0] & 0xF0;
         const state = data[1];
 
         if (!playerStates[playerId])
