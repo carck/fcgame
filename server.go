@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"sync"
 
@@ -13,35 +14,32 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-/*
-   ======================
-   Global state
-   ======================
-*/
-
+// ------------------------
+// Global state
+// ------------------------
 var (
-	// TV connection
 	tvConn  *websocket.Conn
 	tvSend  chan []byte
 	tvMutex sync.Mutex
 
-	// Players
 	playerIDSeq  = 1
 	players      = make(map[int]*websocket.Conn)
 	playersMutex sync.Mutex
 )
 
-/*
-   ======================
-   Player WebSocket (/ws)
-   ======================
-*/
-
+// ------------------------
+// Player WebSocket (/ws)
+// ------------------------
 func wsPlayerHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("Upgrade error:", err)
 		return
+	}
+
+	// Set TCP_NODELAY for low latency
+	if tcpConn, ok := conn.UnderlyingConn().(*net.TCPConn); ok {
+		tcpConn.SetNoDelay(true)
 	}
 
 	// Assign player ID
@@ -62,17 +60,19 @@ func wsPlayerHandler(w http.ResponseWriter, r *http.Request) {
 	go readLoopPlayer(id, conn)
 }
 
-/*
-   ======================
-   TV WebSocket (/ws-tv)
-   ======================
-*/
-
+// ------------------------
+// TV WebSocket (/ws-tv)
+// ------------------------
 func wsTVHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("Upgrade error:", err)
 		return
+	}
+
+	// Set TCP_NODELAY for low latency
+	if tcpConn, ok := conn.UnderlyingConn().(*net.TCPConn); ok {
+		tcpConn.SetNoDelay(true)
 	}
 
 	tvMutex.Lock()
@@ -84,7 +84,7 @@ func wsTVHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tvConn = conn
-	tvSend = make(chan []byte, 256)
+	tvSend = make(chan []byte, 1024) // 缓冲足够大
 	tvMutex.Unlock()
 
 	log.Println("TV connected")
@@ -93,12 +93,9 @@ func wsTVHandler(w http.ResponseWriter, r *http.Request) {
 	go readLoopTV(conn)
 }
 
-/*
-   ======================
-   Player read loop
-   ======================
-*/
-
+// ------------------------
+// Player read loop
+// ------------------------
 func readLoopPlayer(id int, conn *websocket.Conn) {
 	defer func() {
 		conn.Close()
@@ -117,31 +114,27 @@ func readLoopPlayer(id int, conn *websocket.Conn) {
 			continue
 		}
 
-		// Forward to TV safely
+		// Forward to TV asynchronously
 		tvMutex.Lock()
 		send := tvSend
 		tvMutex.Unlock()
 
 		if send != nil {
 			select {
-			case send <- msg:
+			case send <- msg: // 异步发送
 			default:
-				// Drop if TV is slow
+				// TV 太慢，丢弃
 			}
 		}
 	}
 }
 
-/*
-   ======================
-   TV read loop
-   ======================
-*/
-
+// ------------------------
+// TV read loop
+// ------------------------
 func readLoopTV(conn *websocket.Conn) {
 	defer func() {
 		conn.Close()
-
 		tvMutex.Lock()
 		if tvSend != nil {
 			close(tvSend)
@@ -149,7 +142,6 @@ func readLoopTV(conn *websocket.Conn) {
 		}
 		tvConn = nil
 		tvMutex.Unlock()
-
 		log.Println("TV disconnected")
 	}()
 
@@ -158,16 +150,13 @@ func readLoopTV(conn *websocket.Conn) {
 		if err != nil {
 			return
 		}
-		// TV messages ignored
+		// TV 消息忽略
 	}
 }
 
-/*
-   ======================
-   TV write loop
-   ======================
-*/
-
+// ------------------------
+// TV write loop
+// ------------------------
 func tvWriteLoop(conn *websocket.Conn, send <-chan []byte) {
 	for msg := range send {
 		if err := conn.WriteMessage(websocket.BinaryMessage, msg); err != nil {
@@ -176,12 +165,9 @@ func tvWriteLoop(conn *websocket.Conn, send <-chan []byte) {
 	}
 }
 
-/*
-   ======================
-   main
-   ======================
-*/
-
+// ------------------------
+// main
+// ------------------------
 func main() {
 	fs := http.FileServer(http.Dir("./public"))
 	http.Handle("/", fs)
