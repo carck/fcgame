@@ -329,8 +329,8 @@ JSNES.TVUI = function (nes) {
 
         for (let i = 0; i < 2; i++) {
             const mask = 1 << (7 - i);
-            const pressedNow = (state & mask) !== 0;
-            const pressedPrev = (ps.state & mask) !== 0;
+            const pressedNow = (turboState & mask) !== 0;
+            const pressedPrev = (ps.turboState & mask) !== 0;
 
             if (pressedNow != pressedPrev) {
                 const key = this.keymap[playerId][i];
