@@ -205,8 +205,14 @@
             <button class="button" data-key="Start">Start</button>
         </div>
         <div id="buttons" class="action">
-            <button class="button" data-key="A">A</button>
-            <button class="button" data-key="B">B</button>
+            <div>
+                <button class="button" data-key="X">X</button>
+                <button class="button" data-key="Y">Y</button>
+            </div>
+            <div>
+                <button class="button" data-key="A">A</button>
+                <button class="button" data-key="B">B</button>
+            </div>
         </div>
     </div>
     <script>
@@ -215,27 +221,35 @@
         ws.binaryType = "arraybuffer";
         let playerId = null;
         let buttonState = 0x00;
+        let turboState = 0x00;
 
         ws.onmessage = (event) => {
             const data = new Uint8Array(event.data);
             playerId = 2;
         };
 
-        const buttonMap = { A: 7, B: 6, Select: 5, Start: 4, Up: 3, Down: 2, Left: 1, Right: 0 };
+        const buttonMap = { X: 9, Y: 8, A: 7, B: 6, Select: 5, Start: 4, Up: 3, Down: 2, Left: 1, Right: 0 };
         const allDirection = (1 << buttonMap.Up) | (1 << buttonMap.Down) | (1 << buttonMap.Left) | (1 << buttonMap.Right)
 
         function sendState() {
             if (playerId !== null)
-                ws.send(Uint8Array.from([playerId, buttonState]));
+                ws.send(Uint8Array.from([playerId | turboState, buttonState]));
         }
 
         function updateButton(key, pressed) {
             console.log('key', key, pressed);
             const bit = buttonMap[key];
-            if (pressed)
-                buttonState |= (1 << bit);
-            else
-                buttonState &= ~(1 << bit);
+            if (bit >= 8) {
+                if (pressed)
+                    turboState |= (1 << (bit - 2));
+                else
+                    turboState &= ~(1 << (bit - 2));
+            } else {
+                if (pressed)
+                    buttonState |= (1 << bit);
+                else
+                    buttonState &= ~(1 << bit);
+            }
             sendState();
         }
 

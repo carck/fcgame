@@ -268,42 +268,23 @@ JSNES.TVUI = function (nes) {
     const ws = new WebSocket(`${is_https ? 'wss' : 'ws'}://${location.host}/ws-tv`);
     ws.binaryType = "arraybuffer";
 
-    const turboButtons = { 0: true, 1: true }; // A and B buttons have turbo
     const turboFreq = 20;
     const turboInterval = 1000 / turboFreq;
+    const turboTimers = {};
+    const turboKeys = {};
     const playerStates = {};
 
     ws.onmessage = (event) => {
         const data = new Uint8Array(event.data);
-        const playerId = data[0];
+        const playerId = data[0] & 0X0F;
+        const turboState = data[0] & OXF0;
         const state = data[1];
 
         if (!playerStates[playerId])
-            playerStates[playerId] = { state: 0x00, turboMask: 0x00, turboToggle: 0x00 };
+            playerStates[playerId] = { state: 0x00, turboState: 0x00 };
 
-        const ps = playerStates[playerId];
-
-        ps.turboMask = 0x00;
-        for (let bit = 0; bit < 8; bit++) {
-            const mask = 1 << (7 - bit);
-            const pressed = (state & mask) !== 0;
-            if (turboButtons[bit] && pressed)
-                ps.turboMask |= (1 << bit);
-        }
-
-        this.applyToJSNES(playerId, ps, state);
+        this.applyToJSNES(playerId, state, turboState);
     };
-
-    setInterval(() => {
-        for (const playerId in playerStates) {
-
-            const ps = playerStates[playerId];
-            if (ps.turboMask != 0) {
-                ps.turboToggle ^= ps.turboMask;
-                this.applyToJSNES(playerId, ps, ps.state | ps.turboToggle);
-            }
-        }
-    }, turboInterval);
 
     this.keymap = {
         '1': {
@@ -328,7 +309,9 @@ JSNES.TVUI = function (nes) {
         }
     };
 
-    this.applyToJSNES = (playerId, ps, state) => {
+    this.applyToJSNES = (playerId, state, turboState) => {
+        const ps = playerStates[playerId];
+
         for (let i = 0; i < 8; i++) {
             const mask = 1 << (7 - i);
             const pressedNow = (state & mask) !== 0;
@@ -343,8 +326,50 @@ JSNES.TVUI = function (nes) {
                     this.nes.keyboard.keyUp({ keyCode: key });
             }
         }
+
+        for (let i = 0; i < 2; i++) {
+            const mask = 1 << (7 - i);
+            const pressedNow = (state & mask) !== 0;
+            const pressedPrev = (ps.state & mask) !== 0;
+
+            if (pressedNow != pressedPrev) {
+                const key = this.keymap[playerId][i];
+                console.log(`Player ${playerId} turbo key ${key} ${pressedNow ? 'down' : 'up'}`);
+                if (pressedNow) {
+                    this.startTurbo(key);
+                }
+                else {
+                    this.stopTurbo(key);
+                }
+            }
+        }
+
         ps.state = state;
+        ps.turboState = turboState;
     }
+
+    this.startTurbo = (key) => {
+        this.stopTurbo(key);
+
+        turboTimers[key] = setInterval(() => {
+            if (turboKeys[key]) {
+                this.nes.keyboard.keyUp({ keyCode: key });
+            } else {
+                this.nes.keyboard.keyDown({ keyCode: key });
+            }
+            turboKeys[key] = !turboKeys[key];
+        }, turboInterval);
+    };
+
+    this.stopTurbo = (key) => {
+        if (turboTimers[key]) {
+            clearInterval(turboTimers[key]);
+            turboTimers[key] = null;
+
+            this.nes.keyboard.keyUp({ keyCode: key });
+        }
+        turboKeys[key] = false;
+    };
 
     document.addEventListener('keydown', (evt) => {
         const active = document.activeElement;
