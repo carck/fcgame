@@ -39,7 +39,7 @@ JSNES.PAPU = function(nes) {
     this.noiseWavelengthLookup = null;
     this.square_table = null;
     this.tnd_table = null;
-    this.sampleBuffer = new Array(this.bufferSize*2);
+    this.sampleBuffer = new Int16Array(this.bufferSize*2);
 
     this.frameIrqEnabled = false;
     this.frameIrqActive = null;
@@ -634,7 +634,7 @@ JSNES.PAPU.prototype = {
         // Write full buffer
         if (this.bufferIndex === this.sampleBuffer.length) {
             this.nes.ui.writeAudio(this.sampleBuffer);
-            this.sampleBuffer = new Array(this.bufferSize*2);
+            this.sampleBuffer = new Int16Array(this.bufferSize*2);
             this.bufferIndex = 0;
         }
 
