@@ -634,7 +634,7 @@ JSNES.PAPU.prototype = {
         // Write full buffer
         if (this.bufferIndex === this.sampleBuffer.length) {
             this.nes.ui.writeAudio(this.sampleBuffer);
-            this.sampleBuffer = new Int16Array(this.bufferSize*2);
+            this.sampleBuffer.fill(0);
             this.bufferIndex = 0;
         }
 
