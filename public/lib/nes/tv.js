@@ -234,16 +234,17 @@ JSNES.TVUI = function (nes) {
     window.AudioContext = window.AudioContext || window.webkitAudioContext;
     this.audio = new AudioContext({ latencyHint: 'interactive' });
 
-    this.writeAudio = samples => {
+    this.writeAudio = (samplesL, samplesR) => {
         if (!this.audio)
             return;
-        var buffer = this.audio.createBuffer(2, samples.length, this.audio.sampleRate);
+        var buffer = this.audio.createBuffer(2, samplesL.length, this.audio.sampleRate);
         var channelLeft = buffer.getChannelData(0);
         var channelRight = buffer.getChannelData(1);
         var j = 0;
-        for (var i = 0; i < samples.length; i += 2) {
-            channelLeft[j] = samples[i] / 32768;
-            channelRight[j] = samples[i + 1] / 32768;
+        const scale = 1 / 32768;
+        for (var i = 0; i < samplesL.length; i ++) {
+            channelLeft[j] = samplesL[i] * scale;
+            channelRight[j] = samplesR[i] * scale;
             j++;
         }
         var source = this.audio.createBufferSource();

@@ -540,17 +540,18 @@ if (typeof jQuery !== 'undefined') {
                     }
                 },
 
-                writeAudio: function (samples) {
+                writeAudio: function (samplesL, samplesR) {
                     // Create output buffer (planar buffer format)
-                    var buffer = this.audio.createBuffer(2, samples.length, this.audio.sampleRate);
+                    var buffer = this.audio.createBuffer(2, samplesL.length, this.audio.sampleRate);
                     var channelLeft = buffer.getChannelData(0);
                     var channelRight = buffer.getChannelData(1);
                     // Convert from interleaved buffer format to planar buffer
                     // by writing right into appropriate channel buffers
                     var j = 0;
-                    for (var i = 0; i < samples.length; i += 2) {
-                        channelLeft[j] = samples[i]/32768;
-                        channelRight[j] = samples[i + 1]/32768;
+                    const scale = 1 / 32768;
+                    for (var i = 0; i < samplesL.length; i ++) {
+                        channelLeft[j] = samplesL[i]*scale;
+                        channelRight[j] = samplesR[i]*scale;
                         j++;
                     }
                     // Create sound source and play it
