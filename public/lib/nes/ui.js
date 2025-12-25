@@ -549,8 +549,8 @@ if (typeof jQuery !== 'undefined') {
                     // by writing right into appropriate channel buffers
                     var j = 0;
                     for (var i = 0; i < samples.length; i += 2) {
-                        channelLeft[j] = samples[i]/32767;
-                        channelRight[j] = samples[i + 1]/32767;
+                        channelLeft[j] = samples[i]/32768;
+                        channelRight[j] = samples[i + 1]/32768;
                         j++;
                     }
                     // Create sound source and play it
