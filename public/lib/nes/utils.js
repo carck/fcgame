@@ -22,6 +22,10 @@ JSNES.Utils = {
             dest[destPos + i] = src[srcPos + i];
         }
     },
+
+    memcpy: function(src, srcPos, dest, destPos, length) {
+        dest.set(src.subarray(srcPos, srcPos + length), destPos);
+    },
     
     copyArray: function(src) {
         var dest = new Array(src.length);
