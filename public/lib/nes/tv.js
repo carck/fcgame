@@ -330,8 +330,8 @@ JSNES.TVUI = function (nes) {
 
     ws.onmessage = (event) => {
         const data = new Uint8Array(event.data);
-        const playerId = data[0] & 0X0F;
-        const turboState = data[0] & OXF0;
+        const playerId = data[0] & 0x0F;
+        const turboState = data[0] & 0xF0;
         const state = data[1];
 
         if (!playerStates[playerId])
@@ -383,8 +383,8 @@ JSNES.TVUI = function (nes) {
 
         for (let i = 0; i < 2; i++) {
             const mask = 1 << (7 - i);
-            const pressedNow = (state & mask) !== 0;
-            const pressedPrev = (ps.state & mask) !== 0;
+            const pressedNow = (turboState & mask) !== 0;
+            const pressedPrev = (ps.turboState & mask) !== 0;
 
             if (pressedNow != pressedPrev) {
                 const key = this.keymap[playerId][i];
