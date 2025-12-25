@@ -549,22 +549,15 @@ if (typeof jQuery !== 'undefined') {
                     // by writing right into appropriate channel buffers
                     var j = 0;
                     for (var i = 0; i < samples.length; i += 2) {
-                        channelLeft[j] = this.intToFloatSample(samples[i]);
-                        channelRight[j] = this.intToFloatSample(samples[i + 1]);
+                        channelLeft[j] = samples[i]/32767;
+                        channelRight[j] = samples[i + 1]/32767;
                         j++;
                     }
                     // Create sound source and play it
                     var source = this.audio.createBufferSource();
                     source.buffer = buffer;
-                    source.connect(this.audio.destination); // Output to sound
-                    // card
+                    source.connect(this.audio.destination);
                     source.start();
-                },
-                // Local helper function to convert Int output to Float
-                // TODO: remove intToFloat and revise papu.js -> sample()
-                //       to return AudioBuffer/Float32Array output used in HTML5 WebAudio API
-                intToFloatSample: function (value) {
-                    return value / 32767; // from -32767..32768 to -1..1 range
                 },
 
                 writeFrame: function (buffer, prevBuffer) {
