@@ -113,20 +113,32 @@ JSNES.TVUI = function (nes) {
     // =========================
     // 图像处理
     // =========================
+    const useCanvas = !this.nes.opts.webgl;
     const canvas = document.getElementById('nes-canvas');
-    const gl = canvas.getContext('webgl', { alpha: false, antialias: false });
-    gl.disable(gl.DEPTH_TEST);
-    gl.disable(gl.BLEND);
-    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    let gl = null;
+    let canvasContext = null;
+    let canvasImageData = null;;
 
-    function shader(type, src) {
-        const s = gl.createShader(type);
-        gl.shaderSource(s, src);
-        gl.compileShader(s);
-        return s;
-    }
+    if (useCanvas) {
+        canvasContext = canvas.getContext('2d');
+        canvasImageData = this.canvasContext.getImageData(0, 0, 256, 240);
+        canvasContext.fillStyle = 'black';
+        // set alpha to opaque
+        canvasContext.fillRect(0, 0, 256, 240);
+    } else {
+        gl = canvas.getContext('webgl', { alpha: false, antialias: false });
+        gl.disable(gl.DEPTH_TEST);
+        gl.disable(gl.BLEND);
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
 
-    const vs = shader(gl.VERTEX_SHADER, `
+        function shader(type, src) {
+            const s = gl.createShader(type);
+            gl.shaderSource(s, src);
+            gl.compileShader(s);
+            return s;
+        }
+
+        const vs = shader(gl.VERTEX_SHADER, `
         attribute vec2 a_pos;
         attribute vec2 a_uv;
         varying vec2 v_uv;
@@ -134,84 +146,80 @@ JSNES.TVUI = function (nes) {
             v_uv = vec2(a_uv.x, 1.0 - a_uv.y);
             gl_Position = vec4(a_pos, 0.0, 1.0);
         }
-    `);
+        `);
 
-    const fs = shader(gl.FRAGMENT_SHADER, `
+        const fs = shader(gl.FRAGMENT_SHADER, `
         precision mediump float;
         uniform sampler2D u_tex;
         varying vec2 v_uv;
         void main() {
             gl_FragColor = texture2D(u_tex, v_uv);
         }
-    `);
+        `);
 
-    const prog = gl.createProgram();
-    gl.attachShader(prog, vs);
-    gl.attachShader(prog, fs);
-    gl.linkProgram(prog);
-    gl.useProgram(prog);
+        const prog = gl.createProgram();
+        gl.attachShader(prog, vs);
+        gl.attachShader(prog, fs);
+        gl.linkProgram(prog);
+        gl.useProgram(prog);
 
-    const vbo = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-        -1, -1, 0, 0,
-        1, -1, 1, 0,
-        -1, 1, 0, 1,
-        1, 1, 1, 1,
-    ]), gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+            -1, -1, 0, 0,
+            1, -1, 1, 0,
+            -1, 1, 0, 1,
+            1, 1, 1, 1,
+        ]), gl.STATIC_DRAW);
 
-    const FSIZE = 4 * 4;
-    const aPos = gl.getAttribLocation(prog, 'a_pos');
-    const aUV = gl.getAttribLocation(prog, 'a_uv');
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, FSIZE, 0);
-    gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, FSIZE, 8);
-    gl.enableVertexAttribArray(aPos);
-    gl.enableVertexAttribArray(aUV);
+        const FSIZE = 4 * 4;
+        const aPos = gl.getAttribLocation(prog, 'a_pos');
+        const aUV = gl.getAttribLocation(prog, 'a_uv');
+        gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, FSIZE, 0);
+        gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, FSIZE, 8);
+        gl.enableVertexAttribArray(aPos);
+        gl.enableVertexAttribArray(aUV);
 
-    const tex = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 240, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        const tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 240, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 
-    const NES_ASPECT = 4 / 3;
-
-    function resizeGL() {
-        const w = canvas.clientWidth;
-        const h = canvas.clientHeight;
-        const screenAspect = w / h;
-        let vw, vh, vx, vy;
-        if (screenAspect > NES_ASPECT) {
-            vh = h;
-            vw = vh * NES_ASPECT;
-            vx = (w - vw) / 2;
-            vy = 0;
-        } else {
-            vw = w;
-            vh = vw / NES_ASPECT;
-            vx = 0;
-            vy = (h - vh) / 2;
+        function resizeGL() {
+            const NES_ASPECT = 4 / 3;
+            const w = canvas.clientWidth;
+            const h = canvas.clientHeight;
+            const screenAspect = w / h;
+            let vw, vh, vx, vy;
+            if (screenAspect > NES_ASPECT) {
+                vh = h;
+                vw = vh * NES_ASPECT;
+                vx = (w - vw) / 2;
+                vy = 0;
+            } else {
+                vw = w;
+                vh = vw / NES_ASPECT;
+                vx = 0;
+                vy = (h - vh) / 2;
+            }
+            canvas.width = w;
+            canvas.height = h;
+            gl.viewport(vx, vy, vw, vh);
         }
-        canvas.width = w;
-        canvas.height = h;
-        gl.viewport(vx, vy, vw, vh);
-        canvas.style.imageRendering = 'pixelated';
-        canvas.style.imageRendering = 'crisp-edges';
+
+        window.addEventListener('resize', resizeGL);
+        resizeGL();
     }
 
-    window.addEventListener('resize', resizeGL);
-    resizeGL();
-
-    // =========================
-    // NES framebuffer RGBA 缓冲区
-    // =========================
-
     this.writeFrame = buffer => {
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 256, 240, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(buffer.buffer));
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        if (useCanvas) {
+            canvasImageData.data.set(new Uint8Array(buffer.buffer));
+            canvasContext.putImageData(canvasImageData, 0, 0);
+        } else {
+            gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 256, 240, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(buffer.buffer));
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        }
     };
 
     /* =========================
