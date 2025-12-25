@@ -121,7 +121,7 @@ JSNES.TVUI = function (nes) {
 
     if (useCanvas) {
         canvasContext = canvas.getContext('2d');
-        canvasImageData = this.canvasContext.getImageData(0, 0, 256, 240);
+        canvasImageData = canvasContext.getImageData(0, 0, 256, 240);
         canvasContext.fillStyle = 'black';
         // set alpha to opaque
         canvasContext.fillRect(0, 0, 256, 240);
