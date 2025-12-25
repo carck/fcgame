@@ -1377,6 +1377,32 @@ JSNES.Mappers[34].prototype.write = function(address, value) {
 };
 
 /**
+ * Mapper 038
+ *
+ * @description http://wiki.nesdev.com/w/index.php/INES_Mapper_038
+ * @example Crime Busters
+ * @constructor
+ */
+JSNES.Mappers[38] = function (nes) {
+  this.nes = nes;
+};
+
+JSNES.Mappers[38].prototype = new JSNES.Mappers[0]();
+
+JSNES.Mappers[38].prototype.write = function (address, value) {
+  if (address < 0x7000 || address > 0x7fff) {
+    JSNES.Mappers[0].prototype.write.apply(this, arguments);
+    return;
+  } else {
+    // Swap in the given PRG-ROM bank at 0x8000:
+    this.load32kRomBank(value & 3, 0x8000);
+
+    // Swap in the given VROM bank at 0x0000:
+    this.load8kVromBank(((value >> 2) & 3) * 2, 0x0000);
+  }
+};
+
+/**
  * Mapper 066 (GxROM)
  *
  * @description http://wiki.nesdev.com/w/index.php/INES_Mapper_066
@@ -1402,4 +1428,160 @@ JSNES.Mappers[66].prototype.write = function(address, value) {
         // Swap in the given VROM bank at 0x0000:
         this.load8kVromBank((value & 3) * 2, 0x0000);
     }
+};
+
+/**
+ * Mapper 094 (UN1ROM)
+ *
+ * @description http://wiki.nesdev.com/w/index.php/INES_Mapper_094
+ * @example Senjou no Ookami
+ * @constructor
+ */
+JSNES.Mappers[94] = function (nes) {
+  this.nes = nes;
+};
+
+JSNES.Mappers[94].prototype = new JSNES.Mappers[0]();
+
+JSNES.Mappers[94].prototype.write = function (address, value) {
+  // Writes to addresses other than MMC registers are handled by NoMapper.
+  if (address < 0x8000) {
+    JSNES.Mappers[0].prototype.write.apply(this, arguments);
+    return;
+  } else {
+    // This is a ROM bank select command.
+    // Swap in the given ROM bank at 0x8000:
+    this.loadRomBank(value >> 2, 0x8000);
+  }
+};
+
+JSNES.Mappers[94].prototype.loadROM = function () {
+  if (!this.nes.rom.valid) {
+    throw new Error("UN1ROM: Invalid ROM! Unable to load.");
+  }
+
+  // Load PRG-ROM:
+  this.loadRomBank(0, 0x8000);
+  this.loadRomBank(this.nes.rom.romCount - 1, 0xc000);
+
+  // Load CHR-ROM:
+  this.loadCHRROM();
+
+  // Do Reset-Interrupt:
+  this.nes.cpu.requestIrq(this.nes.cpu.IRQ_RESET);
+};
+
+/**
+ * Mapper 140
+ *
+ * @description http://wiki.nesdev.com/w/index.php/INES_Mapper_140
+ * @example Bio Senshi Dan - Increaser Tono Tatakai
+ * @constructor
+ */
+JSNES.Mappers[140] = function (nes) {
+  this.nes = nes;
+};
+
+JSNES.Mappers[140].prototype = new JSNES.Mappers[0]();
+
+JSNES.Mappers[140].prototype.write = function (address, value) {
+  if (address < 0x6000 || address > 0x7fff) {
+    JSNES.Mappers[0].prototype.write.apply(this, arguments);
+    return;
+  } else {
+    // Swap in the given PRG-ROM bank at 0x8000:
+    this.load32kRomBank((value >> 4) & 3, 0x8000);
+
+    // Swap in the given VROM bank at 0x0000:
+    this.load8kVromBank((value & 0xf) * 2, 0x0000);
+  }
+};
+
+/**
+ * Mapper 180
+ *
+ * @description http://wiki.nesdev.com/w/index.php/INES_Mapper_180
+ * @example Crazy Climber
+ * @constructor
+ */
+JSNES.Mappers[180] = function (nes) {
+  this.nes = nes;
+};
+
+JSNES.Mappers[180].prototype = new JSNES.Mappers[0]();
+
+JSNES.Mappers[180].prototype.write = function (address, value) {
+  // Writes to addresses other than MMC registers are handled by NoMapper.
+  if (address < 0x8000) {
+    JSNES.Mappers[0].prototype.write.apply(this, arguments);
+    return;
+  } else {
+    // This is a ROM bank select command.
+    // Swap in the given ROM bank at 0xc000:
+    this.loadRomBank(value, 0xc000);
+  }
+};
+
+JSNES.Mappers[180].prototype.loadROM = function () {
+  if (!this.nes.rom.valid) {
+    throw new Error("Mapper 180: Invalid ROM! Unable to load.");
+  }
+
+  // Load PRG-ROM:
+  this.loadRomBank(0, 0x8000);
+  this.loadRomBank(this.nes.rom.romCount - 1, 0xc000);
+
+  // Load CHR-ROM:
+  this.loadCHRROM();
+
+  // Do Reset-Interrupt:
+  this.nes.cpu.requestIrq(this.nes.cpu.IRQ_RESET);
+};
+
+/**
+ * Mapper 240
+ *
+ * @description https://www.nesdev.org/wiki/INES_Mapper_240
+ * @example Jing Ke Xin Zhuan,Sheng Huo Lie Zhuan
+ * @constructor https://blog.heheda.top
+ */
+JSNES.Mappers[240] = function (nes) {
+  this.nes = nes;
+};
+
+JSNES.Mappers[240].prototype = new JSNES.Mappers[0]();
+
+JSNES.Mappers[240].prototype.write = function (address, value) {
+  if (address < 0x4020 || address > 0x5fff) {
+    JSNES.Mappers[0].prototype.write.apply(this, arguments);
+    return;
+  } else {
+    // Swap in the given PRG-ROM bank at 0x8000:
+    this.load32kRomBank((value >> 4) & 3, 0x8000);
+
+    // Swap in the given VROM bank at 0x0000:
+    this.load8kVromBank((value & 0xf) * 2, 0x0000);
+  }
+};
+
+/**
+ * Mapper 241 (BNROM, NINA-01)
+ *
+ * @description http://wiki.nesdev.com/w/index.php/INES_Mapper_241
+ * @example
+ * @constructor https://blog.heheda.top
+ */
+JSNES.Mappers[241] = function (nes) {
+  this.nes = nes;
+};
+
+JSNES.Mappers[241].prototype = new JSNES.Mappers[0]();
+
+JSNES.Mappers[241].prototype.write = function (address, value) {
+  if (address < 0x8000) {
+    JSNES.Mappers[0].prototype.write.apply(this, arguments);
+    return;
+  } else {
+    this.load32kRomBank(value, 0x8000);
+  }
 };

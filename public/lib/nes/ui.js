@@ -561,21 +561,8 @@ if (typeof jQuery !== 'undefined') {
                 },
 
                 writeFrame: function (buffer, prevBuffer) {
-                    var imageData = this.canvasImageData.data;
-                    var pixel, i, j;
-
-                    for (i = 0; i < 256 * 240; i++) {
-                        pixel = buffer[i];
-
-                        if (pixel != prevBuffer[i]) {
-                            j = i * 4;
-                            imageData[j] = pixel & 0xFF;
-                            imageData[j + 1] = (pixel >> 8) & 0xFF;
-                            imageData[j + 2] = (pixel >> 16) & 0xFF;
-                            prevBuffer[i] = pixel;
-                        }
-                    }
-
+                    this.canvasImageData.data.set(new Uint8Array(buffer.buffer));
+                    
                     this.canvasContext.putImageData(this.canvasImageData, 0, 0);
                 }
             };
