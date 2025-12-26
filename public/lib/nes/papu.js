@@ -95,7 +95,7 @@ JSNES.PAPU = function(nes) {
     this.minSample = null;
     
     // Panning:
-    this.panning = [80, 170, 100, 150, 128];
+    this.panning = new Uint8Array([80, 170, 100, 150, 128]);
     this.setPanning(this.panning);
 
     // Initialize lookup tables:
@@ -456,8 +456,8 @@ JSNES.PAPU.prototype = {
     accSample: function(cycles) {
         // Special treatment for triangle channel - need to interpolate.
         if (this.triangle.sampleCondition) {
-            this.triValue = Math.floor((this.triangle.progTimerCount << 4) /
-                    (this.triangle.progTimerMax + 1));
+            this.triValue = ((this.triangle.progTimerCount << 4) /
+                    (this.triangle.progTimerMax + 1))|0;
             if (this.triValue > 16) {
                 this.triValue = 16;
             }
@@ -548,15 +548,15 @@ JSNES.PAPU.prototype = {
         if (this.accCount > 0) {
 
             this.smpSquare1 <<= 4;
-            this.smpSquare1 = Math.floor(this.smpSquare1 / this.accCount);
+            this.smpSquare1 = (this.smpSquare1 / this.accCount)|0;
 
             this.smpSquare2 <<= 4;
-            this.smpSquare2 = Math.floor(this.smpSquare2 / this.accCount);
+            this.smpSquare2 = (this.smpSquare2 / this.accCount)|0;
 
-            this.smpTriangle = Math.floor(this.smpTriangle / this.accCount);
+            this.smpTriangle = (this.smpTriangle / this.accCount)|0;
 
             this.smpDmc <<= 4;
-            this.smpDmc = Math.floor(this.smpDmc / this.accCount);
+            this.smpDmc = (this.smpDmc / this.accCount)|0;
         
             this.accCount = 0;
         }
@@ -567,8 +567,8 @@ JSNES.PAPU.prototype = {
             this.smpDmc = this.dmc.sample << 4;
         }
     
-        var smpNoise = Math.floor((this.noise.accValue << 4) / 
-                this.noise.accCount);
+        var smpNoise = ((this.noise.accValue << 4) /
+                this.noise.accCount)|0;
         this.noise.accValue = smpNoise >> 4;
         this.noise.accCount = 1;
 
@@ -584,11 +584,13 @@ JSNES.PAPU.prototype = {
                 (smpNoise<<1) * this.stereoPosLNoise + this.smpDmc * 
                 this.stereoPosLDMC
             ) >> 8;
-        if (sq_index >= this.square_table.length) {
-            sq_index  = this.square_table.length-1;
+        var sq_len = this.square_table.length;
+        var tnd_len = this.tnd_table.length;
+        if (sq_index >= sq_len) {
+            sq_index  = sq_len-1;
         }
-        if (tnd_index >= this.tnd_table.length) {
-            tnd_index = this.tnd_table.length - 1;
+        if (tnd_index >= tnd_len) {
+            tnd_index = tnd_len - 1;
         }
         var sampleValueL = this.square_table[sq_index] + 
                 this.tnd_table[tnd_index] - this.dcValue;
@@ -601,11 +603,11 @@ JSNES.PAPU.prototype = {
                 (smpNoise << 1) * this.stereoPosRNoise + this.smpDmc * 
                 this.stereoPosRDMC
             ) >> 8;
-        if (sq_index >= this.square_table.length) {
-            sq_index = this.square_table.length - 1;
+        if (sq_index >= sq_len) {
+            sq_index = sq_len - 1;
         }
-        if (tnd_index >= this.tnd_table.length) {
-            tnd_index = this.tnd_table.length - 1;
+        if (tnd_index >= tnd_len) {
+            tnd_index = tnd_len - 1;
         }
         var sampleValueR = this.square_table[sq_index] + 
                 this.tnd_table[tnd_index] - this.dcValue;
@@ -636,8 +638,8 @@ JSNES.PAPU.prototype = {
         // Write full buffer
         if (this.bufferIndex === this.sampleBufferL.length) {
             this.nes.ui.writeAudio(this.sampleBufferL, this.sampleBufferR);
-            this.sampleBufferL.fill(0);
-            this.sampleBufferR.fill(0);
+            //this.sampleBufferL.fill(0);
+            //this.sampleBufferR.fill(0);
             this.bufferIndex = 0;
         }
 
@@ -701,7 +703,7 @@ JSNES.PAPU.prototype = {
 
     initLengthLookup: function(){
 
-        this.lengthLookup = [
+        this.lengthLookup = new Uint8Array([
             0x0A, 0xFE,
             0x14, 0x02,
             0x28, 0x04,
@@ -718,12 +720,12 @@ JSNES.PAPU.prototype = {
             0x48, 0x1A,
             0x10, 0x1C,
             0x20, 0x1E
-        ];
+        ]);
     },
 
     initDmcFrequencyLookup: function(){
 
-        this.dmcFreqLookup = new Array(16);
+        this.dmcFreqLookup = new Uint16Array(16);
 
         this.dmcFreqLookup[0x0] = 0xD60;
         this.dmcFreqLookup[0x1] = 0xBE0;
@@ -747,7 +749,7 @@ JSNES.PAPU.prototype = {
 
     initNoiseWavelengthLookup: function(){
 
-        this.noiseWavelengthLookup = new Array(16);
+        this.noiseWavelengthLookup = new Uint16Array(16);
 
         this.noiseWavelengthLookup[0x0] = 0x004;
         this.noiseWavelengthLookup[0x1] = 0x008;
@@ -773,14 +775,14 @@ JSNES.PAPU.prototype = {
         var max_sqr = 0;
         var max_tnd = 0;
         
-        this.square_table = new Array(32*16);
-        this.tnd_table = new Array(204*16);
+        this.square_table = new Uint16Array(32*16);
+        this.tnd_table = new Uint16Array(204*16);
 
         for (i = 0; i < 32 * 16; i++) {
             value = 95.52 / (8128.0 / (i/16.0) + 100.0);
             value *= 0.98411;
             value *= 50000.0;
-            ival = Math.floor(value);
+            ival = (value|0);
         
             this.square_table[i] = ival;
             if (ival > max_sqr) {
@@ -792,7 +794,7 @@ JSNES.PAPU.prototype = {
             value = 163.67 / (24329.0 / (i/16.0) + 100.0);
             value *= 0.98411;
             value *= 50000.0;
-            ival = Math.floor(value);
+            ival = (value|0);
         
             this.tnd_table[i] = ival;
             if (ival > max_tnd) {
@@ -1147,18 +1149,18 @@ JSNES.PAPU.ChannelNoise.prototype = {
 JSNES.PAPU.ChannelSquare = function(papu, square1) {
     this.papu = papu;
     
-    this.dutyLookup = [
+    this.dutyLookup = new Uint8Array([
          0, 1, 0, 0, 0, 0, 0, 0,
          0, 1, 1, 0, 0, 0, 0, 0,
          0, 1, 1, 1, 1, 0, 0, 0,
          1, 0, 0, 1, 1, 1, 1, 1
-    ];
-    this.impLookup = [
+    ]);
+    this.impLookup = new Uint8Array([
          1,-1, 0, 0, 0, 0, 0, 0,
          1, 0,-1, 0, 0, 0, 0, 0,
          1, 0, 0, 0,-1, 0, 0, 0,
         -1, 0, 1, 0, 0, 0, 0, 0
-    ];
+    ]);
     
     this.sqr1 = square1;
     this.isEnabled = null;

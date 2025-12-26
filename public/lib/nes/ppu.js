@@ -175,7 +175,7 @@ JSNES.PPU.prototype = {
         this.attrib = new Array(32);
         this.buffer = new Uint32Array(256*240);
         this.bgbuffer = new Uint32Array(256*240);
-        this.pixrendered = new Uint32Array(256*240);
+        this.pixrendered = new Uint16Array(256*240);
 
         this.validTileData = null;
 
@@ -218,7 +218,7 @@ JSNES.PPU.prototype = {
         }
         
         // Initialize mirroring lookup table:
-        this.vramMirrorTable = new Array(0x8000);
+        this.vramMirrorTable = new Uint32Array(0x8000);
         for (i=0; i<0x8000; i++) {
             this.vramMirrorTable[i] = i;
         }
@@ -243,7 +243,7 @@ JSNES.PPU.prototype = {
     
         // Remove mirroring:
         if (this.vramMirrorTable === null) {
-            this.vramMirrorTable = new Array(0x8000);
+            this.vramMirrorTable = new Uint32Array(0x8000);
         }
         for (var i=0; i<0x8000; i++) {
             this.vramMirrorTable[i] = i;
@@ -498,14 +498,10 @@ JSNES.PPU.prototype = {
         }
         
         var buffer = this.buffer;
-        var i;
-        for (i=0; i<256*240; i++) {
-            buffer[i] = bgColor;
-        }
+        buffer.fill(bgColor);
+        
         var pixrendered = this.pixrendered;
-        for (i=0; i<pixrendered.length; i++) {
-            pixrendered[i]=65;
-        }
+        pixrendered.fill(65);
     },
     
     endFrame: function(){

@@ -99,7 +99,7 @@ JSNES.ROM.prototype = {
             this.nes.ui.updateStatus("Not a valid NES ROM.");
             return;
         }
-        this.header = new Array(16);
+        this.header = new Uint8Array(16);
         for (i = 0; i < 16; i++) {
             this.header[i] = data.charCodeAt(i) & 0xFF;
         }
