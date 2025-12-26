@@ -122,17 +122,15 @@ if (typeof jQuery !== 'undefined') {
                     var $el = $(selector);
                     $el.bind('touchstart', function (e) {
                         self.nes.keyboard.keyDown({ keyCode: keyCode });
-                        if (options.addActive) {
+                        if (options.animate) {
                             $el[0].style.setProperty('--press-shadow', '0 0 0 10px rgba(179,58,58,.75)');
-                            $el[0].style.setProperty('--translate-y', '2px');
                         }
                         e.preventDefault();
                     });
                     $el.bind('touchend', function (e) {
                         self.nes.keyboard.keyUp({ keyCode: keyCode });
-                        if (options.addActive) {
+                        if (options.animate) {
                             $el[0].style.setProperty('--press-shadow', '0 0 0 0 transparent');
-                            $el[0].style.setProperty('--translate-y', '0');
                         }
                         e.preventDefault();
                     });
@@ -142,10 +140,10 @@ if (typeof jQuery !== 'undefined') {
                 bindButton('#joystick_btn_down', 83, {});
                 bindButton('#joystick_btn_left', 65, {});
                 bindButton('#joystick_btn_right', 68, {});
-                bindButton('#joystick_btn_A', 74, { addActive: true });
-                bindButton('#joystick_btn_B', 75, { addActive: true });
-                bindButton('#joystick_btn_select', 32, { addActive: true });
-                bindButton('#joystick_btn_start', 13, { addActive: true });
+                bindButton('#joystick_btn_A', 74, { animate: true });
+                bindButton('#joystick_btn_B', 75, { animate: true });
+                bindButton('#joystick_btn_select', 32, { animate: true });
+                bindButton('#joystick_btn_start', 13, { animate: true });
 
                 $('#controls-turbofire').bind('touchstart', function (e) {
                     handleFire(e, true);

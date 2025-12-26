@@ -202,9 +202,6 @@ button.left.joydirection {
         inset 5px 8px 0 0px rgba(255, 255, 255, .4), 
         inset -5px -8px 0 0px rgba(0, 0, 0, .1);
     --press-shadow: 0 0 0 0 transparent;
-    --translate-y: 0;
-
-    transform: translateY(var(--translate-y));
     transition: transform 0.06s ease;
 }
 
@@ -215,7 +212,6 @@ button.left.joydirection {
     border-radius: inherit;
     pointer-events: none;
     box-shadow: var(--press-shadow);
-    transform: translateY(var(--translate-y));
     transition: transform 0.06s ease;
 }
 
