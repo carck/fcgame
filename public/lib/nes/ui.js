@@ -123,17 +123,17 @@ if (typeof jQuery !== 'undefined') {
                     $el.bind('touchstart', function (e) {
                         self.nes.keyboard.keyDown({ keyCode: keyCode });
                         if (options.addActive) {
-                            if (navigator.vibrate) {
-                                navigator.vibrate(15);
-                            }
-                            $el.addClass('active');
+                            $el[0].style.setProperty('--press-shadow', '0 0 0 10px rgba(179,58,58,.75)');
+                            $el[0].style.setProperty('--translate-y', '2px');
                         }
                         e.preventDefault();
                     });
                     $el.bind('touchend', function (e) {
                         self.nes.keyboard.keyUp({ keyCode: keyCode });
-                        if (options.addActive)
-                            $el.removeClass('active');
+                        if (options.addActive) {
+                            $el[0].style.setProperty('--press-shadow', '0 0 0 0 transparent');
+                            $el[0].style.setProperty('--translate-y', '0');
+                        }
                         e.preventDefault();
                     });
                 }
@@ -142,8 +142,8 @@ if (typeof jQuery !== 'undefined') {
                 bindButton('#joystick_btn_down', 83, {});
                 bindButton('#joystick_btn_left', 65, {});
                 bindButton('#joystick_btn_right', 68, {});
-                bindButton('#joystick_btn_A', 74, {});
-                bindButton('#joystick_btn_B', 75, {});
+                bindButton('#joystick_btn_A', 74, { addActive: true });
+                bindButton('#joystick_btn_B', 75, { addActive: true });
                 bindButton('#joystick_btn_select', 32, { addActive: true });
                 bindButton('#joystick_btn_start', 13, { addActive: true });
 
@@ -161,8 +161,6 @@ if (typeof jQuery !== 'undefined') {
                 });
                 $('#controls-turbofire').bind('touchend', function (e) {
                     clearInterval(self.interval);
-                    $('#controls-turbofire .a').removeClass('active');
-                    $('#controls-turbofire .b').removeClass('active');
                     self.nes.keyboard.keyUp({
                         keyCode: 74
                     });
@@ -173,15 +171,9 @@ if (typeof jQuery !== 'undefined') {
                 });
 
                 function handleFire(e, turbo) {
-                    var parent = $('#controls-fire');
-                    if (turbo) {
-                        parent = $('#controls-turbofire');
-                    }
                     var myLocation = e.originalEvent.changedTouches[0];
                     var realTarget = document.elementFromPoint(myLocation.clientX, myLocation.clientY);
                     if ($(realTarget).hasClass('a')) {
-                        $('.a', parent).addClass('active');
-                        $('.b', parent).removeClass('active');
                         clearInterval(self.interval);
                         if (turbo) {
                             self.nes.keyboard.keyUp({
@@ -210,8 +202,6 @@ if (typeof jQuery !== 'undefined') {
                             });
                         }
                     } else if ($(realTarget).hasClass('b')) {
-                        $('.a', parent).removeClass('active');
-                        $('.b', parent).addClass('active');
                         clearInterval(self.interval);
                         if (turbo) {
                             self.nes.keyboard.keyDown({
@@ -241,8 +231,6 @@ if (typeof jQuery !== 'undefined') {
                         }
                     } else {
                         clearInterval(self.interval);
-                        $('.a', parent).removeClass('active');
-                        $('.b', parent).removeClass('active');
                         self.nes.keyboard.keyUp({
                             keyCode: 88
                         });
