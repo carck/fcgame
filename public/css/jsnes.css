@@ -210,47 +210,18 @@ button.left.joydirection {
     color: #000;
     border: 8px solid #474f51;
     box-shadow: 0 0 0 10px rgba(255, 255, 255, .8), inset 5px 8px 0 0px rgba(255, 255, 255, .4), inset -5px -8px 0 0px rgba(0, 0, 0, .1);
+    transition: transform 0.06s ease;
+}
+
+.action button:active {
+    box-shadow:
+        0 0 0 10px rgba(179, 58, 58, .75),
+        inset 5px 8px 0 rgba(255, 255, 255, .4),
+        inset -5px -8px 0 rgba(0, 0, 0, .15);
 }
 
 .action button:first-child {
     margin-right: 20px;
-}
-
-.sign {
-    position: absolute;
-    font-weight: bold;
-    font-size: 20px;
-    font-style: italic;
-    height: 50px;
-    right: 0;
-    top: 0;
-    background: #da4a4a;
-    color: #f8f1d7;
-    text-shadow: 0 -2px #fffef7;
-    padding: 0 0 15px 15px;
-    letter-spacing: 0.1em;
-    border-bottom-left-radius: 15px;
-    filter: drop-shadow(0 8px #fffef7)
-}
-
-.sign::before {
-    content: '';
-    position: absolute;
-    width: 15px;
-    height: 15px;
-    left: -15px;
-    top: 0;
-    background: radial-gradient(circle at left bottom, transparent 14px, #da4a4a 15px);
-}
-
-.sign::after {
-    content: '';
-    position: absolute;
-    width: 15px;
-    height: 15px;
-    bottom: -15px;
-    right: 0;
-    background: radial-gradient(circle at left bottom, transparent 14px, #da4a4a 15px);
 }
 
 .joy {
@@ -266,21 +237,6 @@ button.left.joydirection {
     color: #f8f1d7;
     font-weight: bold;
     font-size: 30px;
-}
-
-.readme {
-    position: absolute;
-    left: 0;
-    top: 90px;
-    width: 90px;
-    height: 30px;
-    background: #857b7a;
-    border-radius: 5px;
-    text-align: center;
-    line-height: 30px;
-    color: #f8f1d7;
-    font-weight: bold;
-    font-size: 20px;
 }
 
 .screen {
@@ -377,6 +333,4 @@ button.left.joydirection {
     }
 }
 
-@media screen and (orientation: landscape) {
-    /*æ¨ªå± css*/
-}
+@media screen and (orientation: landscape) {}
