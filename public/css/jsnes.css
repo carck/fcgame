@@ -201,18 +201,6 @@ button.left.joydirection {
         0 0 0 10px rgba(255, 255, 255, .8), 
         inset 5px 8px 0 0px rgba(255, 255, 255, .4), 
         inset -5px -8px 0 0px rgba(0, 0, 0, .1);
-    --press-shadow: 0 0 0 0 transparent;
-    transition: transform 0.06s ease;
-}
-
-.action button::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    box-shadow: var(--press-shadow);
-    transition: transform 0.06s ease;
 }
 
 .action button:first-child {
