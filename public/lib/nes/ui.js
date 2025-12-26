@@ -52,6 +52,13 @@ if (typeof jQuery !== 'undefined') {
                         source.start();
                     }
                     $('.function').hide();
+
+                    const elem = document.documentElement;
+                    if (elem.requestFullscreen) {
+                        elem.requestFullscreen().catch(err => {
+                            console.log("全屏失败:", err);
+                        });
+                    }
                 });
 
                 $('.nes-screen').css({

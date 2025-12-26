@@ -242,7 +242,7 @@ JSNES.TVUI = function (nes) {
         var channelRight = buffer.getChannelData(1);
         var j = 0;
         const scale = 1 / 32768;
-        for (var i = 0; i < samplesL.length; i ++) {
+        for (var i = 0; i < samplesL.length; i++) {
             channelLeft[j] = samplesL[i] * scale;
             channelRight[j] = samplesR[i] * scale;
             j++;
@@ -295,6 +295,13 @@ JSNES.TVUI = function (nes) {
     this.loadROM = (path) => {
         if (this.audio.state === 'suspended') {
             this.audio.resume();
+        }
+
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen().catch(err => {
+                console.log("全屏失败:", err);
+            });
         }
 
         if (!this.nes.opts.emulateSound) {
