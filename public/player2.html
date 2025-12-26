@@ -55,7 +55,7 @@
             position: absolute;
             z-index: 1;
             border: 8px solid #474f51;
-            background: linear-gradient(#8e8583, #7a716f);
+            background: #857b7a;
             color: transparent;
             border-radius: 15px;
             box-sizing: border-box;
@@ -78,7 +78,7 @@
             top: 50%;
             width: 56px;
             height: 56px;
-            background: linear-gradient(#8e8583, #7a716f);
+            background: #857b7a;
             transform: translate(-50%, -50%);
         }
 
@@ -145,7 +145,7 @@
             padding: 8px 15px;
             border-radius: 50px;
             align-self: center;
-            background: #b64545;
+            background: #da4a4a;
             box-shadow: 5px 5px 0 rgba(255, 255, 255, .8);
         }
 
@@ -157,7 +157,7 @@
             outline: 0;
             border: 3px solid #474f51;
             box-shadow: 0 0 0 8px rgba(255, 255, 255, .1), inset 4px 4px 0 0px rgba(255, 255, 255, .4);
-            background: linear-gradient(#8e8583, #7a716f);
+            background: #857b7a;
             color: #000;
             border-radius: 15px;
         }
@@ -174,23 +174,12 @@
             user-select: none;
             width: 56px;
             height: 56px;
-            background: linear-gradient(#8e8583, #7a716f);
+            background: #857b7a;
             border-radius: 50%;
             outline: 0;
             color: #000;
             border: 8px solid #474f51;
-            box-shadow:
-                0 0 0 10px rgba(255, 255, 255, .6),
-                inset 5px 8px 0 rgba(255, 255, 255, .4),
-                inset -5px -8px 0 rgba(0, 0, 0, .15);
-            transition: transform 0.06s ease;
-        }
-
-        .action button:active {
-            box-shadow:
-                0 0 0 10px rgba(179, 58, 58, .75),
-                inset 5px 8px 0 rgba(255, 255, 255, .4),
-                inset -5px -8px 0 rgba(0, 0, 0, .15);
+            box-shadow: 0 0 0 10px rgba(255, 255, 255, .8), inset 5px 8px 0 0px rgba(255, 255, 255, .4), inset -5px -8px 0 0px rgba(0, 0, 0, .1);
         }
     </style>
 </head>
@@ -240,7 +229,7 @@
 
         ws.onmessage = (event) => {
             const data = new Uint8Array(event.data);
-            playerId = 1;
+            playerId = 2;
         };
 
         const buttonMap = { X: 9, Y: 8, A: 7, B: 6, Select: 5, Start: 4, Up: 3, Down: 2, Left: 1, Right: 0 };
@@ -254,9 +243,6 @@
         function updateButton(key, pressed) {
             console.log('key', key, pressed);
             const bit = buttonMap[key];
-            if (bit > 4 && navigator.vibrate) {
-                navigator.vibrate(15);
-            }
             if (bit >= 8) {
                 if (pressed)
                     turboState |= (1 << (bit - 2));

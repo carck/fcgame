@@ -38,6 +38,12 @@ if (typeof jQuery !== 'undefined') {
                 self.romSelect = $('.nes-roms select');
                 self.screen = $('.nes-screen');
                 self.status = $('.nes-status');
+                self.buttons = {
+                    pause: $('.nes-pause'),
+                    restart: $('.nes-restart'),
+                    sound: $('.nes-enablesound'),
+                    zoom: $('.nes-zoom')
+                };
 
                 /*
                  * ROM loading
@@ -45,14 +51,45 @@ if (typeof jQuery !== 'undefined') {
                 self.romSelect.change(function () {
                     self.loadROM();
                     if (!self.nes.opts.emulateSound) {
-                        self.nes.opts.emulateSound = true;
-                        var source = self.audio.createBufferSource();
-                        source.connect(self.audio.destination);
-                        source.start();
+                        self.buttons.sound.click();
                     }
                     $('.function').hide();
                 });
 
+                /*
+                 * Buttons
+                 */
+                self.buttons.pause.click(function () {
+                    if (self.nes.isRunning) {
+                        self.nes.stop();
+                        self.updateStatus("Paused");
+                        self.buttons.pause.attr("value", "继续");
+                    } else {
+                        self.nes.start();
+                        self.buttons.pause.attr("value", "暂停");
+                    }
+                });
+
+                self.buttons.restart.click(function () {
+                    self.nes.reloadRom();
+                    self.nes.start();
+                });
+
+                self.buttons.sound.click(function () {
+                    if (self.nes.opts.emulateSound) {
+                        self.nes.opts.emulateSound = false;
+                        self.buttons.sound.attr("value", "音效");
+                    } else {
+                        self.nes.opts.emulateSound = true;
+                        self.buttons.sound.attr("value", "静音");
+
+                        var source = self.audio.createBufferSource();
+                        source.connect(self.audio.destination); // Output to sound
+                        source.start();
+                    }
+                });
+
+                self.zoomed = false;
                 $('.nes-screen').css({
                     'max-height': document.documentElement.clientHeight,
                 })
@@ -64,9 +101,39 @@ if (typeof jQuery !== 'undefined') {
                 if (/(IPHONE|IPAD|ANDROID)/i.test(navigator.userAgent)) {
                     $('.main').removeClass('pc').addClass('mobile');
                 } else {
+                    self.buttons.zoom.attr("disabled", "disabled");
                     $('.main').removeClass('mobile').addClass('pc');
                 }
 
+                self.buttons.zoom.click(function () {
+                    if (self.zoomed) {
+                        $('body').addClass('大屏');
+                        if (document.documentElement.clientHeight < screen.availHeight) {
+                            $('body').css({
+                                width: document.documentElement.clientHeight,
+                            })
+                        }
+                        $('.big .nes-screen').css({
+                            height: document.documentElement.clientWidth,
+                            width: 'auto'
+                        })
+                        self.buttons.zoom.attr("value", "大屏");
+                        self.zoomed = true;
+                    } else {
+                        self.buttons.zoom.attr("value", "小屏");
+                        $('body').removeClass('big');
+                        $('.nes-screen').css({
+                            height: 'auto',
+                            width: '100%',
+                            'max-width': document.documentElement.clientWidth,
+                            'max-height': document.documentElement.clientHeight
+                        })
+                        $('body').css({
+                            width: 'auto'
+                        })
+                        self.zoomed = false;
+                    }
+                });
                 /*
                  * Lightgun experiments with mouse
                  * (Requires jquery.dimensions.js)
@@ -121,59 +188,133 @@ if (typeof jQuery !== 'undefined') {
                         self.nes.keyboard.keyPress(evt);
                     });
 
-                const keyMap = {
-                    Up: 87,
-                    Down: 83,
-                    Left: 65,
-                    Right: 68,
-                    A: 74,
-                    B: 75,
-                    Select: 32,
-                    Start: 13,
-                }
 
-                $('.joydirection').bind('touchstart', function (e) {
-                    const key = e.currentTarget.dataset.key;
+                $('#joystick_btn_up').bind('touchstart', function (e) {
+                    console.log("up");
                     self.nes.keyboard.keyDown({
-                        keyCode: keyMap[key]
+                        keyCode: 87
                     });
                     e.preventDefault();
 
                 });
-
-                $('.joydirection').bind('touchend', function (e) {
-                    const key = e.currentTarget.dataset.key;
+                $('#joystick_btn_up').bind('touchend', function (e) {
                     self.nes.keyboard.keyUp({
-                        keyCode: keyMap[key]
+                        keyCode: 87
                     });
                     e.preventDefault();
                 });
-
-                $('.joybtn').bind('touchstart', function (e) {
-                    const key = e.currentTarget.dataset.key;
+                $('#joystick_btn_down').bind('touchstart', function (e) {
+                    console.log("down");
                     self.nes.keyboard.keyDown({
-                        keyCode: keyMap[key]
+                        keyCode: 83
                     });
-                    if (navigator.vibrate) {
-                        navigator.vibrate(15);
-                    }
+                    e.preventDefault();
+                });
+                $('#joystick_btn_down').bind('touchend', function (e) {
+                    self.nes.keyboard.keyUp({
+                        keyCode: 83
+                    });
+                    e.preventDefault();
+                });
+                $('#joystick_btn_left').bind('touchstart', function (e) {
+                    console.log("left");
+                    self.nes.keyboard.keyDown({
+                        keyCode: 65
+                    });
+                    e.preventDefault();
+                });
+                $('#joystick_btn_left').bind('touchend', function (e) {
+                    self.nes.keyboard.keyUp({
+                        keyCode: 65
+                    });
+                    e.preventDefault();
+                });
+                $('#joystick_btn_right').bind('touchstart', function (e) {
+                    console.log("right");
+                    self.nes.keyboard.keyDown({
+                        keyCode: 68
+                    });
+                    e.preventDefault();
+                });
+                $('#joystick_btn_right').bind('touchend', function (e) {
+                    self.nes.keyboard.keyUp({
+                        keyCode: 68
+                    });
+                    e.preventDefault();
+                });
+                $('#joystick_btn_A').bind('touchstart', function (e) {
+                    console.log("a");
+                    self.nes.keyboard.keyDown({
+                        keyCode: 74
+                    });
+                    e.preventDefault();
+                });
+                $('#joystick_btn_A').bind('touchend', function (e) {
+                    self.nes.keyboard.keyUp({
+                        keyCode: 74
+                    });
+                    e.preventDefault();
+                });
+                $('#joystick_btn_B').bind('touchstart', function (e) {
+                    console.log("b down");
+                    self.nes.keyboard.keyDown({
+                        keyCode: 75
+                    });
+                    e.preventDefault();
+                });
+                $('#joystick_btn_B').bind('touchend', function (e) {
+                    console.log("b up");
+                    self.nes.keyboard.keyUp({
+                        keyCode: 75
+                    });
+                    e.preventDefault();
+                });
+                $('#joystick_btn_select').bind('touchstart', function (e) {
+                    self.nes.keyboard.keyDown({
+                        keyCode: 32
+                    });
+                    $('#joystick_btn_select').addClass('active');
+                    e.preventDefault();
+                });
+                $('#joystick_btn_select').bind('touchend', function (e) {
+                    self.nes.keyboard.keyUp({
+                        keyCode: 32
+                    });
+                    $('#joystick_btn_select').removeClass('active');
+                    e.preventDefault();
+                });
+                $('#joystick_btn_start').bind('touchstart', function (e) {
+                    console.log("start");
+                    self.nes.keyboard.keyDown({
+                        keyCode: 13
+                    });
+                    $('#joystick_btn_start').addClass('active');
+                    e.preventDefault();
+                });
+                $('#joystick_btn_start').bind('touchend', function (e) {
+                    self.nes.keyboard.keyUp({
+                        keyCode: 13
+                    });
+                    $('#joystick_btn_start').removeClass('active');
                     e.preventDefault();
                 });
 
                 $('#controls-turbofire').bind('touchstart', function (e) {
-                    handleFire(e);
+                    handleFire(e, true);
                     e.preventDefault();
                 });
                 $('#controls-turbofire').bind('gesturestart', function (e) {
-                    handleFire(e);
+                    handleFire(e, true);
                     e.preventDefault();
                 });
                 $('#controls-turbofire').bind('touchmove', function (e) {
-                    handleFire(e);
+                    handleFire(e, true);
                     e.preventDefault();
                 });
                 $('#controls-turbofire').bind('touchend', function (e) {
                     clearInterval(self.interval);
+                    $('#controls-turbofire .a').removeClass('active');
+                    $('#controls-turbofire .b').removeClass('active');
                     self.nes.keyboard.keyUp({
                         keyCode: 74
                     });
@@ -183,51 +324,111 @@ if (typeof jQuery !== 'undefined') {
                     e.preventDefault();
                 });
 
-                function handleFire(e) {
+                function handleFire(e, turbo) {
+                    var parent = $('#controls-fire');
+                    if (turbo) {
+                        parent = $('#controls-turbofire');
+                    }
                     var myLocation = e.originalEvent.changedTouches[0];
                     var realTarget = document.elementFromPoint(myLocation.clientX, myLocation.clientY);
                     if ($(realTarget).hasClass('a')) {
+                        $('.a', parent).addClass('active');
+                        $('.b', parent).removeClass('active');
                         clearInterval(self.interval);
-
-                        self.nes.keyboard.keyUp({
-                            keyCode: 74
-                        });
-                        self.nes.keyboard.keyDown({
-                            keyCode: 74
-                        });
-                        self.a_fire = false;
-                        self.interval = setInterval(function () {
-                            self.a_fire
-                                ? self.nes.keyboard.keyUp({
-                                    keyCode: 74
-                                })
-                                : self.nes.keyboard.keyDown({
-                                    keyCode: 74
-                                });
-                            self.a_fire = !self.a_fire;
-                        }, 50);
-
+                        if (turbo) {
+                            self.nes.keyboard.keyUp({
+                                keyCode: 74
+                            });
+                            self.nes.keyboard.keyDown({
+                                keyCode: 74
+                            });
+                            self.a_fire = false;
+                            self.interval = setInterval(function () {
+                                self.a_fire
+                                    ? self.nes.keyboard.keyUp({
+                                        keyCode: 74
+                                    })
+                                    : self.nes.keyboard.keyDown({
+                                        keyCode: 74
+                                    });
+                                self.a_fire = !self.a_fire;
+                            }, 50);
+                        } else {
+                            self.nes.keyboard.keyUp({
+                                keyCode: 74
+                            });
+                            self.nes.keyboard.keyDown({
+                                keyCode: 74
+                            });
+                        }
                     } else if ($(realTarget).hasClass('b')) {
+                        $('.a', parent).removeClass('active');
+                        $('.b', parent).addClass('active');
                         clearInterval(self.interval);
-
-                        self.nes.keyboard.keyDown({
-                            keyCode: 75
-                        });
-
-                        self.nes.keyboard.keyUp({
-                            keyCode: 75
-                        });
-                        self.b_fire = false;
-                        self.interval = setInterval(function () {
-                            self.b_fire
-                                ? self.nes.keyboard.keyUp({
-                                    keyCode: 75
-                                })
-                                : self.nes.keyboard.keyDown({
-                                    keyCode: 75
+                        if (turbo) {
+                            self.nes.keyboard.keyDown({
+                                keyCode: 75
+                            });
+                            self.nes.keyboard.keyUp({
+                                keyCode: 75
+                            });
+                            self.b_fire = false;
+                            self.interval = setInterval(function () {
+                                self.b_fire
+                                    ? self.nes.keyboard.keyUp({
+                                        keyCode: 75
+                                    })
+                                    : self.nes.keyboard.keyDown({
+                                        keyCode: 75
+                                    });
+                                self.b_fire = !self.b_fire;
+                            }, 50);
+                        } else {
+                            self.nes.keyboard.keyDown({
+                                keyCode: 75
+                            });
+                            self.nes.keyboard.keyUp({
+                                keyCode: 75
+                            });
+                        }
+                    } else if ($(realTarget).hasClass('c')) {
+                        $('.a', parent).addClass('active');
+                        $('.b', parent).addClass('active');
+                        clearInterval(self.interval);
+                        if (turbo) {
+                            self.nes.keyboard.keyDown({
+                                keyCode: 'AA'
+                            });
+                            self.nes.keyboard.keyDown({
+                                keyCode: 'BB'
+                            });
+                            self.interval = setInterval(function () {
+                                self.nes.keyboard.keyDown({
+                                    keyCode: 'AA'
                                 });
-                            self.b_fire = !self.b_fire;
-                        }, 50);
+                                self.nes.keyboard.keyDown({
+                                    keyCode: 'BB'
+                                });
+                            }, 50);
+                        } else {
+                            self.nes.keyboard.keyDown({
+                                keyCode: 88
+                            });
+                            self.nes.keyboard.keyDown({
+                                keyCode: 90
+                            });
+                        }
+                    } else {
+                        clearInterval(self.interval);
+                        $('.a', parent).removeClass('active');
+                        $('.b', parent).removeClass('active');
+                        self.nes.keyboard.keyUp({
+                            keyCode: 88
+                        });
+                        self.nes.keyboard.keyUp({
+                            keyCode: 90
+                        });
+
                     }
                 }
 
@@ -300,10 +501,26 @@ if (typeof jQuery !== 'undefined') {
                     return img;
                 },
 
+                /*
+                 * Enable and reset UI elements
+                 */
                 enable: function () {
+                    this.buttons.pause.attr("disabled", null);
+                    if (this.nes.isRunning) {
+                        this.buttons.pause.attr("value", "暂停");
+                    } else {
+                        this.buttons.pause.attr("value", "继续");
+                    }
+                    this.buttons.restart.attr("disabled", null);
+                    if (this.nes.opts.emulateSound) {
+                        this.buttons.sound.attr("value", "静音");
+                    } else {
+                        this.buttons.sound.attr("value", "音效");
+                    }
                 },
 
                 updateStatus: function (s) {
+                    this.status.text(s);
                 },
 
                 setRoms: function (roms) {
@@ -332,9 +549,9 @@ if (typeof jQuery !== 'undefined') {
                     // by writing right into appropriate channel buffers
                     var j = 0;
                     const scale = 1 / 32768;
-                    for (var i = 0; i < samplesL.length; i++) {
-                        channelLeft[j] = samplesL[i] * scale;
-                        channelRight[j] = samplesR[i] * scale;
+                    for (var i = 0; i < samplesL.length; i ++) {
+                        channelLeft[j] = samplesL[i]*scale;
+                        channelRight[j] = samplesR[i]*scale;
                         j++;
                     }
                     // Create sound source and play it
@@ -344,9 +561,9 @@ if (typeof jQuery !== 'undefined') {
                     source.start();
                 },
 
-                writeFrame: function (buffer) {
+                writeFrame: function (buffer, prevBuffer) {
                     this.canvasImageData.data.set(new Uint8Array(buffer.buffer));
-
+                    
                     this.canvasContext.putImageData(this.canvasImageData, 0, 0);
                 }
             };
