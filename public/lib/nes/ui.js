@@ -37,13 +37,6 @@ if (typeof jQuery !== 'undefined') {
                  */
                 self.romSelect = $('.nes-roms select');
                 self.screen = $('.nes-screen');
-                self.status = $('.nes-status');
-                self.buttons = {
-                    pause: $('.nes-pause'),
-                    restart: $('.nes-restart'),
-                    sound: $('.nes-enablesound'),
-                    zoom: $('.nes-zoom')
-                };
 
                 /*
                  * ROM loading
@@ -51,45 +44,15 @@ if (typeof jQuery !== 'undefined') {
                 self.romSelect.change(function () {
                     self.loadROM();
                     if (!self.nes.opts.emulateSound) {
-                        self.buttons.sound.click();
+                        self.nes.opts.emulateSound = true;
+
+                        var source = self.audio.createBufferSource();
+                        source.connect(self.audio.destination);
+                        source.start();
                     }
                     $('.function').hide();
                 });
 
-                /*
-                 * Buttons
-                 */
-                self.buttons.pause.click(function () {
-                    if (self.nes.isRunning) {
-                        self.nes.stop();
-                        self.updateStatus("Paused");
-                        self.buttons.pause.attr("value", "继续");
-                    } else {
-                        self.nes.start();
-                        self.buttons.pause.attr("value", "暂停");
-                    }
-                });
-
-                self.buttons.restart.click(function () {
-                    self.nes.reloadRom();
-                    self.nes.start();
-                });
-
-                self.buttons.sound.click(function () {
-                    if (self.nes.opts.emulateSound) {
-                        self.nes.opts.emulateSound = false;
-                        self.buttons.sound.attr("value", "音效");
-                    } else {
-                        self.nes.opts.emulateSound = true;
-                        self.buttons.sound.attr("value", "静音");
-
-                        var source = self.audio.createBufferSource();
-                        source.connect(self.audio.destination); // Output to sound
-                        source.start();
-                    }
-                });
-
-                self.zoomed = false;
                 $('.nes-screen').css({
                     'max-height': document.documentElement.clientHeight,
                 })
@@ -98,42 +61,7 @@ if (typeof jQuery !== 'undefined') {
                         'max-height': document.documentElement.clientHeight,
                     })
                 })
-                if (/(IPHONE|IPAD|ANDROID)/i.test(navigator.userAgent)) {
-                    $('.main').removeClass('pc').addClass('mobile');
-                } else {
-                    self.buttons.zoom.attr("disabled", "disabled");
-                    $('.main').removeClass('mobile').addClass('pc');
-                }
 
-                self.buttons.zoom.click(function () {
-                    if (self.zoomed) {
-                        $('body').addClass('大屏');
-                        if (document.documentElement.clientHeight < screen.availHeight) {
-                            $('body').css({
-                                width: document.documentElement.clientHeight,
-                            })
-                        }
-                        $('.big .nes-screen').css({
-                            height: document.documentElement.clientWidth,
-                            width: 'auto'
-                        })
-                        self.buttons.zoom.attr("value", "大屏");
-                        self.zoomed = true;
-                    } else {
-                        self.buttons.zoom.attr("value", "小屏");
-                        $('body').removeClass('big');
-                        $('.nes-screen').css({
-                            height: 'auto',
-                            width: '100%',
-                            'max-width': document.documentElement.clientWidth,
-                            'max-height': document.documentElement.clientHeight
-                        })
-                        $('body').css({
-                            width: 'auto'
-                        })
-                        self.zoomed = false;
-                    }
-                });
                 /*
                  * Lightgun experiments with mouse
                  * (Requires jquery.dimensions.js)
@@ -391,34 +319,7 @@ if (typeof jQuery !== 'undefined') {
                                 keyCode: 75
                             });
                         }
-                    } else if ($(realTarget).hasClass('c')) {
-                        $('.a', parent).addClass('active');
-                        $('.b', parent).addClass('active');
-                        clearInterval(self.interval);
-                        if (turbo) {
-                            self.nes.keyboard.keyDown({
-                                keyCode: 'AA'
-                            });
-                            self.nes.keyboard.keyDown({
-                                keyCode: 'BB'
-                            });
-                            self.interval = setInterval(function () {
-                                self.nes.keyboard.keyDown({
-                                    keyCode: 'AA'
-                                });
-                                self.nes.keyboard.keyDown({
-                                    keyCode: 'BB'
-                                });
-                            }, 50);
-                        } else {
-                            self.nes.keyboard.keyDown({
-                                keyCode: 88
-                            });
-                            self.nes.keyboard.keyDown({
-                                keyCode: 90
-                            });
-                        }
-                    } else {
+                    }  else {
                         clearInterval(self.interval);
                         $('.a', parent).removeClass('active');
                         $('.b', parent).removeClass('active');
@@ -505,22 +406,11 @@ if (typeof jQuery !== 'undefined') {
                  * Enable and reset UI elements
                  */
                 enable: function () {
-                    this.buttons.pause.attr("disabled", null);
-                    if (this.nes.isRunning) {
-                        this.buttons.pause.attr("value", "暂停");
-                    } else {
-                        this.buttons.pause.attr("value", "继续");
-                    }
-                    this.buttons.restart.attr("disabled", null);
-                    if (this.nes.opts.emulateSound) {
-                        this.buttons.sound.attr("value", "静音");
-                    } else {
-                        this.buttons.sound.attr("value", "音效");
-                    }
+                   
                 },
 
                 updateStatus: function (s) {
-                    this.status.text(s);
+  
                 },
 
                 setRoms: function (roms) {

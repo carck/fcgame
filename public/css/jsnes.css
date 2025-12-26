@@ -28,18 +28,6 @@ body {
     padding: 10px;
 }
 
-.pc .controller-area {
-    display: none;
-}
-
-.pc .action-area {
-    display: none;
-}
-
-.pc .function {
-    display: none;
-}
-
 .panel {
     position: relative;
     height: 100%;
