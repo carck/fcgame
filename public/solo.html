@@ -23,17 +23,17 @@
             <div class="controller-area">
                 <div class="action">
                     <button class="controls-center-select joybtn" id="joystick_btn_select"
-                        role="BUTTON_SELECT">Select</button>
+                        role="BUTTON_SELECT" data-key="Select">Select</button>
                     <button class="controls-center-start joybtn" id="joystick_btn_start"
-                        role="BUTTON_START">Start</button>
+                        role="BUTTON_START" data-key="Start">Start</button>
                 </div>
                 <div class="controller">
                     <div id="controls-direction">
                         <div id="controls-rocker"></div>
-                        <button role="BUTTON_UP" class="up joydirection" id="joystick_btn_up">U</button>
-                        <button role="BUTTON_RIGHT" class="right joydirection" id="joystick_btn_right">R</button>
-                        <button role="BUTTON_DOWN" class="down joydirection" id="joystick_btn_down">D</button>
-                        <button role="BUTTON_LEFT" class="left joydirection" id="joystick_btn_left">L</button>
+                        <button role="BUTTON_UP" class="up joydirection" data-key="Up" id="joystick_btn_up">U</button>
+                        <button role="BUTTON_RIGHT" class="right joydirection" data-key="Right" id="joystick_btn_right">R</button>
+                        <button role="BUTTON_DOWN" class="down joydirection" data-key="Down" id="joystick_btn_down">D</button>
+                        <button role="BUTTON_LEFT" class="left joydirection" data-key="Left" id="joystick_btn_left">L</button>
                     </div>
                 </div>
             </div>
@@ -55,14 +55,14 @@
             <div class="action-area">
                 <div class="action">
                     <div id="controls-turbofire">
-                        <button class="b joybtn" role="BUTTON_B">X</button>
-                        <button class="a joybtn" role="BUTTON_A">Y</button>
+                        <button class="b joybtnTurbo" data-key="B" role="BUTTON_B">X</button>
+                        <button class="a joybtnTurbo" data-key="A" role="BUTTON_A">Y</button>
                     </div>
                 </div>
                 <div class="action">
                     <div id="controls-fire">
-                        <button class="b joybtn" role="BUTTON_B" id="joystick_btn_B">B</button>
-                        <button class="a joybtn" role="BUTTON_A" id="joystick_btn_A">A</button>
+                        <button class="b joybtn" role="BUTTON_B" data-key="B" id="joystick_btn_B">B</button>
+                        <button class="a joybtn" role="BUTTON_A" data-key="A" id="joystick_btn_A">A</button>
                     </div>
                 </div>
             </div>

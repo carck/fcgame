@@ -37,6 +37,7 @@ if (typeof jQuery !== 'undefined') {
                  */
                 self.romSelect = $('.nes-roms select');
                 self.screen = $('.nes-screen');
+                self.hitArea = {};
 
                 /*
                  * ROM loading
@@ -55,35 +56,23 @@ if (typeof jQuery !== 'undefined') {
 
                 $('.nes-screen').css({
                     'max-height': document.documentElement.clientHeight,
-                })
+                });
+
+                document.querySelectorAll('.joybtnTurbo').forEach(function (e) {
+                    const key = e.dataset.key;
+                    self.hitArea[key] = e.getBoundingClientRect();
+                });
+
                 $(window).bind('resize', function () {
                     $('.nes-screen').css({
                         'max-height': document.documentElement.clientHeight,
                     })
+                    document.querySelectorAll('.joybtnTurbo').forEach(function (e) {
+                        const key = e.dataset.key;
+                        self.hitArea[key] = e.getBoundingClientRect();
+                    });
                 })
 
-                /*
-                 * Lightgun experiments with mouse
-                 * (Requires jquery.dimensions.js)
-                 */
-                if ($.offset) {
-                    self.screen.mousedown(function (e) {
-                        if (self.nes.mmap) {
-                            self.nes.mmap.mousePressed = true;
-                            // FIXME: does not take into account zoom
-                            self.nes.mmap.mouseX = e.pageX - self.screen.offset().left;
-                            self.nes.mmap.mouseY = e.pageY - self.screen.offset().top;
-                        }
-                    }).mouseup(function () {
-                        setTimeout(function () {
-                            if (self.nes.mmap) {
-                                self.nes.mmap.mousePressed = false;
-                                self.nes.mmap.mouseX = 0;
-                                self.nes.mmap.mouseY = 0;
-                            }
-                        }, 500);
-                    });
-                }
 
                 if (typeof roms != 'undefined') {
                     self.setRoms(roms);
@@ -116,128 +105,134 @@ if (typeof jQuery !== 'undefined') {
                         self.nes.keyboard.keyPress(evt);
                     });
 
+                const keyMap = {
+                    "Up": 87,
+                    "Down": 83,
+                    "Left": 65,
+                    "Right": 68,
+                    "A": 74,
+                    "B": 75,
+                    "Select": 32,
+                    "Start": 13
+                };
 
-                function bindButton(selector, keyCode, options) {
-                    options = options || {};
-                    var $el = $(selector);
-                    $el.bind('touchstart', function (e) {
+                document.querySelectorAll('.joydirection, .joybtn').forEach(function (e) {
+                    const key = e.dataset.key;
+                    const keyCode = keyMap[key];
+                    e.addEventListener('touchstart', function (e) {
                         self.nes.keyboard.keyDown({ keyCode: keyCode });
-                        if (options.animate) {
-                            $el[0].style.setProperty('--press-shadow', '0 0 0 10px rgba(179,58,58,.75)');
-                        }
                         e.preventDefault();
                     });
-                    $el.bind('touchend', function (e) {
+                    e.addEventListener('touchend', function (e) {
                         self.nes.keyboard.keyUp({ keyCode: keyCode });
-                        if (options.animate) {
-                            $el[0].style.setProperty('--press-shadow', '0 0 0 0 transparent');
-                        }
                         e.preventDefault();
+                    });
+                });
+
+                function getHitKey(e) {
+                    var myLocation = e.originalEvent.changedTouches[0];
+                    for (const key in self.hitArea) {
+                        const rect = self.hitArea[key];
+                        if (myLocation.clientX >= rect.left &&
+                            myLocation.clientX <= rect.right &&
+                            myLocation.clientY >= rect.top &&
+                            myLocation.clientY <= rect.bottom) {
+                            return key;
+                        }
+                    }
+                    return null;
+                }
+
+                const turboState = {
+                    A: { active: false, primary: false, interval: null, fired: false },
+                    B: { active: false, primary: false, interval: null, fired: false }
+                };
+
+                const TURBO_INTERVAL = 50;
+
+                function startTurbo(key, isPrimary) {
+                    const state = turboState[key];
+                    if (!state || state.active) return;
+
+                    const keyCode = keyMap[key];
+
+                    state.active = true;
+                    state.primary = !!isPrimary;
+                    state.fired = false;
+
+                    self.nes.keyboard.keyDown({ keyCode });
+
+                    state.interval = setInterval(() => {
+                        state.fired
+                            ? self.nes.keyboard.keyDown({ keyCode })
+                            : self.nes.keyboard.keyUp({ keyCode });
+                        state.fired = !state.fired;
+                    }, TURBO_INTERVAL);
+
+                    console.log('[Turbo start]', key, 'primary=', state.primary);
+                }
+
+                function stopTurbo(key) {
+                    const state = turboState[key];
+                    if (!state || !state.active) return;
+
+                    clearInterval(state.interval);
+
+                    state.active = false;
+                    state.primary = false;
+                    state.interval = null;
+                    state.fired = false;
+
+                    self.nes.keyboard.keyUp({ keyCode: keyMap[key] });
+
+                    console.log('[Turbo stop]', key);
+                }
+
+                function stopNonPrimaryTurbo() {
+                    Object.keys(turboState).forEach(key => {
+                        const state = turboState[key];
+                        if (state.active && !state.primary) {
+                            stopTurbo(key);
+                        }
                     });
                 }
 
-                bindButton('#joystick_btn_up', 87, {});
-                bindButton('#joystick_btn_down', 83, {});
-                bindButton('#joystick_btn_left', 65, {});
-                bindButton('#joystick_btn_right', 68, {});
-                bindButton('#joystick_btn_A', 74, { animate: true });
-                bindButton('#joystick_btn_B', 75, { animate: true });
-                bindButton('#joystick_btn_select', 32, { animate: true });
-                bindButton('#joystick_btn_start', 13, { animate: true });
+                function stopAllTurbo() {
+                    Object.keys(turboState).forEach(stopTurbo);
+                }
+
 
                 $('#controls-turbofire').bind('touchstart', function (e) {
-                    handleFire(e, true);
+                    const key = getHitKey(e);
+                    if (key && turboState[key]) {
+                        startTurbo(key, true);
+                    }
                     e.preventDefault();
                 });
                 $('#controls-turbofire').bind('gesturestart', function (e) {
-                    handleFire(e, true);
+                    const key = getHitKey(e);
+                    if (key && turboState[key]) {
+                        startTurbo(key, true);
+                    }
                     e.preventDefault();
                 });
                 $('#controls-turbofire').bind('touchmove', function (e) {
-                    handleFire(e, true);
+                    const key = getHitKey(e);
+
+                    if (key && turboState[key]) {
+                        if (!turboState[key].active) {
+                            startTurbo(key, false);
+                        }
+                    } else {
+                        stopNonPrimaryTurbo();
+                    }
+
                     e.preventDefault();
                 });
                 $('#controls-turbofire').bind('touchend', function (e) {
-                    clearInterval(self.interval);
-                    self.nes.keyboard.keyUp({
-                        keyCode: 74
-                    });
-                    self.nes.keyboard.keyUp({
-                        keyCode: 75
-                    });
+                    stopAllTurbo();
                     e.preventDefault();
                 });
-
-                function handleFire(e, turbo) {
-                    var myLocation = e.originalEvent.changedTouches[0];
-                    var realTarget = document.elementFromPoint(myLocation.clientX, myLocation.clientY);
-                    if ($(realTarget).hasClass('a')) {
-                        clearInterval(self.interval);
-                        if (turbo) {
-                            self.nes.keyboard.keyUp({
-                                keyCode: 74
-                            });
-                            self.nes.keyboard.keyDown({
-                                keyCode: 74
-                            });
-                            self.a_fire = false;
-                            self.interval = setInterval(function () {
-                                self.a_fire
-                                    ? self.nes.keyboard.keyUp({
-                                        keyCode: 74
-                                    })
-                                    : self.nes.keyboard.keyDown({
-                                        keyCode: 74
-                                    });
-                                self.a_fire = !self.a_fire;
-                            }, 50);
-                        } else {
-                            self.nes.keyboard.keyUp({
-                                keyCode: 74
-                            });
-                            self.nes.keyboard.keyDown({
-                                keyCode: 74
-                            });
-                        }
-                    } else if ($(realTarget).hasClass('b')) {
-                        clearInterval(self.interval);
-                        if (turbo) {
-                            self.nes.keyboard.keyDown({
-                                keyCode: 75
-                            });
-                            self.nes.keyboard.keyUp({
-                                keyCode: 75
-                            });
-                            self.b_fire = false;
-                            self.interval = setInterval(function () {
-                                self.b_fire
-                                    ? self.nes.keyboard.keyUp({
-                                        keyCode: 75
-                                    })
-                                    : self.nes.keyboard.keyDown({
-                                        keyCode: 75
-                                    });
-                                self.b_fire = !self.b_fire;
-                            }, 50);
-                        } else {
-                            self.nes.keyboard.keyDown({
-                                keyCode: 75
-                            });
-                            self.nes.keyboard.keyUp({
-                                keyCode: 75
-                            });
-                        }
-                    } else {
-                        clearInterval(self.interval);
-                        self.nes.keyboard.keyUp({
-                            keyCode: 88
-                        });
-                        self.nes.keyboard.keyUp({
-                            keyCode: 90
-                        });
-
-                    }
-                }
 
                 /*
                  * Sound
