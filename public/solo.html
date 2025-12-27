@@ -70,7 +70,6 @@
         </div>
     </div>
 </body>
-<script src="lib/jquery-1.4.2.min.js" type="text/javascript" charset="utf-8"></script>
 <script src="lib/nes/nes.js" type="text/javascript" charset="utf-8"></script>
 <script src="lib/nes/utils.js" type="text/javascript" charset="utf-8"></script>
 <script src="lib/nes/cpu.js" type="text/javascript" charset="utf-8"></script>
@@ -85,9 +84,9 @@
 
 <script type="text/javascript" charset="utf-8">
     var nes;
-    $(function () {
+    document.addEventListener('DOMContentLoaded', function () {
         nes = new JSNES({
-            'ui': $('#emulator').JSNESUI({
+            'ui': JSNESUI({
                 "经典热门": [
                     ['沙罗曼蛇 (U) Life Force [!]', 'roms/Life Force [!].nes'],
                     ['超级马里奥1 (W) Super Mario Bros. [!]', 'roms/(W) Super Mario Bros. [!].nes'],
@@ -187,11 +186,7 @@
                     ['快打旋风 (U) Mighty Final Fight [!]', 'roms/Mighty Final Fight.nes'],
                     ['忍者龙剑传1 (PC10) Ninja Gaiden [!]', 'roms/Ninja_Gaiden1.nes'],
                     ['忍者龙剑传2 (PC10) Ninja Gaiden II [!]', 'roms/Ninja_Gaiden2.nes'],
-                    ['忍者龙剑传3 (PC10) Ninja Gaiden III [!]', 'roms/Ninja_Gaiden3.nes'],
-                    ['七宝奇谋1 (J) Goonies, The [!]', 'roms/(J) Goonies, The [!].nes'],
-                    ['南极大冒险 (J) Antarctic Adventure', 'roms/(J) Antarctic Adventure [!].nes'],
-                    ['叮当1 (J) Dig Dug', 'roms/(J) Dig Dug [!].nes'],
-                    ['影之传说 (J) Kage no Densetsu [!]', 'roms/(J) Kage no Densetsu [!].nes'],
+                    ['忍者龙剑传3 (PC10) Ninja Gaiden III [!]', 'roms/(J) Ninja_Gaiden3.nes'],
                 ],
             })
         });
