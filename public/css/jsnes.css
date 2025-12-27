@@ -240,6 +240,7 @@ button.left.joydirection {
     max-height: 100%;
     image-rendering: pixelated;
     height: 100%;
+    aspect-ratio: 4/3;
 }
 
 .nes-roms>select {

@@ -36,6 +36,11 @@
             font-size: 20px;
         }
 
+        .turboButton {
+            margin: 5px;
+            font-size: 16px;
+        }
+
         .controller-area {
             position: relative;
             z-index: 10;
@@ -172,8 +177,8 @@
         .action button {
             margin: 10px;
             user-select: none;
-            width: 56px;
-            height: 56px;
+            width: 60px;
+            height: 60px;
             background: #857b7a;
             border-radius: 50%;
             outline: 0;
@@ -209,9 +214,9 @@
             <button class="button" data-key="Start">Start</button>
         </div>
         <div id="buttons" class="action">
-            <div>
-                <button class="button" data-key="X">X</button>
-                <button class="button" data-key="Y">Y</button>
+            <div id="turbo-control">
+                <button class="tuboButton" data-key="X">X</button>
+                <button class="tuboButton" data-key="Y">Y</button>
             </div>
             <div>
                 <button class="button" data-key="A">A</button>
@@ -263,6 +268,106 @@
             btn.addEventListener('mouseup', () => updateButton(key, false));
             btn.addEventListener('touchstart', e => { e.preventDefault(); updateButton(key, true); });
             btn.addEventListener('touchend', e => { e.preventDefault(); updateButton(key, false); });
+        });
+
+        const hitArea = {};
+        document.querySelectorAll('.tuboButton').forEach(function (e) {
+            const key = e.dataset.key;
+            hitArea[key] = e.getBoundingClientRect();
+        });
+
+        window.addEventListener('resize', function () {
+            document.querySelectorAll('.tuboButton').forEach(function (e) {
+                const key = e.dataset.key;
+                hitArea[key] = e.getBoundingClientRect();
+            });
+        })
+
+        function getHitKey(e) {
+            var myLocation = e.changedTouches[0];
+            for (const key in hitArea) {
+                const rect = hitArea[key];
+                if (myLocation.clientX >= rect.left &&
+                    myLocation.clientX <= rect.right &&
+                    myLocation.clientY >= rect.top &&
+                    myLocation.clientY <= rect.bottom) {
+                    return key;
+                }
+            }
+            return null;
+        }
+
+        const turboKeyState = {
+            X: { active: false, primary: false },
+            Y: { active: false, primary: false }
+        };
+
+        function startTurbo(key, isPrimary) {
+            const state = turboKeyState[key];
+            if (!state || state.active) return;
+
+            state.active = true;
+            state.primary = isPrimary;
+            updateButton(key, true);
+
+            console.log('[Turbo start]', key, 'primary=', state.primary);
+        }
+
+        function stopTurbo(key) {
+            const state = turboKeyState[key];
+            if (!state || !state.active) return;
+
+            state.active = false;
+            state.primary = false;
+            updateButton(key, false);
+
+            console.log('[Turbo stop]', key);
+        }
+
+        function stopNonPrimaryTurbo() {
+            Object.keys(turboKeyState).forEach(key => {
+                const state = turboKeyState[key];
+                if (state.active && !state.primary) {
+                    stopTurbo(key);
+                }
+            });
+        }
+
+        function stopAllTurbo() {
+            Object.keys(turboKeyState).forEach(stopTurbo);
+        }
+
+
+        document.getElementById('turbo-control').addEventListener('touchstart', function (e) {
+            const key = getHitKey(e);
+            if (key && turboKeyState[key]) {
+                startTurbo(key, true);
+            }
+            e.preventDefault();
+        });
+        document.getElementById('turbo-control').addEventListener('gesturestart', function (e) {
+            const key = getHitKey(e);
+            if (key && turboKeyState[key]) {
+                startTurbo(key, true);
+            }
+            e.preventDefault();
+        });
+        document.getElementById('turbo-control').addEventListener('touchmove', function (e) {
+            const key = getHitKey(e);
+
+            if (key && turboKeyState[key]) {
+                if (!turboKeyState[key].active) {
+                    startTurbo(key, false);
+                }
+            } else {
+                stopNonPrimaryTurbo();
+            }
+
+            e.preventDefault();
+        });
+        document.getElementById('turbo-control').addEventListener('touchend', function (e) {
+            stopAllTurbo();
+            e.preventDefault();
         });
 
         function select(val) {

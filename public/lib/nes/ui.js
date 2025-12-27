@@ -61,19 +61,12 @@ if (typeof jQuery !== 'undefined') {
                     }
                 });
 
-                $('.nes-screen').css({
-                    'max-height': document.documentElement.clientHeight,
-                });
-
                 document.querySelectorAll('.joybtnTurbo').forEach(function (e) {
                     const key = e.dataset.key;
                     self.hitArea[key] = e.getBoundingClientRect();
                 });
 
                 $(window).bind('resize', function () {
-                    $('.nes-screen').css({
-                        'max-height': document.documentElement.clientHeight,
-                    })
                     document.querySelectorAll('.joybtnTurbo').forEach(function (e) {
                         const key = e.dataset.key;
                         self.hitArea[key] = e.getBoundingClientRect();

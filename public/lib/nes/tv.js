@@ -113,7 +113,7 @@ JSNES.TVUI = function (nes) {
     // =========================
     // 图像处理
     // =========================
-    const useCanvas = !this.nes.opts.webgl;
+    const useCanvas = true;
     const canvas = document.getElementById('nes-canvas');
     let gl = null;
     let canvasContext = null;
