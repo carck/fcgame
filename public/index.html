@@ -13,7 +13,6 @@
     <meta name="x5-orientation" content="landscape">
     <meta name="x5-fullscreen" content="true">
     <meta name="x5-page-mode" content="app">
-    <script src="lib/jquery-1.4.2.min.js" type="text/javascript" charset="utf-8"></script>
     <script src="lib/nes/nes.js" type="text/javascript" charset="utf-8"></script>
     <script src="lib/nes/utils.js" type="text/javascript" charset="utf-8"></script>
     <script src="lib/nes/cpu.js" type="text/javascript" charset="utf-8"></script>
@@ -77,7 +76,7 @@
     </div>
     <script type="text/javascript" charset="utf-8">
         var nes;
-        $(function () {
+        document.addEventListener('DOMContentLoaded', function () {
             nes = new JSNES({
                 'ui': JSNES.TVUI
             });

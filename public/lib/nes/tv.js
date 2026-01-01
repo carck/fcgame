@@ -310,25 +310,19 @@ JSNES.TVUI = function (nes) {
 
         const self = this;
 
-        $.ajax({
-            url: escape(path),
-            xhr: function () {
-                var xhr = $.ajaxSettings.xhr();
-                if (typeof xhr.overrideMimeType !== 'undefined') {
-                    // Download as binary
-                    xhr.overrideMimeType('text/plain; charset=x-user-defined');
-                }
-                self.xhr = xhr;
-                return xhr;
-            },
-            complete: function (xhr, status) {
-                var i, data;
-                data = xhr.responseText;
-                document.getElementById('rom-selector').style.display = 'none';
-                self.nes.loadRom(data);
-                self.nes.start();
-            }
-        });
+        var xhr = new XMLHttpRequest();
+            
+        xhr.open('GET', escape(path), true);
+        if (typeof xhr.overrideMimeType !== 'undefined') {
+            xhr.overrideMimeType('text/plain; charset=x-user-defined');
+        }
+        xhr.onload = function () {
+            var data = xhr.responseText;
+            document.getElementById('rom-selector').style.display = 'none';
+            self.nes.loadRom(data);
+            self.nes.start();
+        };
+        xhr.send(null);
     }
 
     // -----------------------
